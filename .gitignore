@@ -1,0 +1,10 @@
+.env
+Neo4j-c405760b-Created-2025-10-13.txt
+notizen.txt
+data/pdfs/*
+data/vpis/*
+data/graph/*
+data/database/*
+__pycache__/*
+src/__pycache__/*
+src/serverFHSWF/Neo4jHandler_alt.py
