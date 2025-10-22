@@ -10,3 +10,4 @@ src/__pycache__/*
 src/serverFHSWF/Neo4jHandler_alt.py
 .github/copilot-instructions.md
 src/common/__pycache__/*
+chroma_db_employees/chroma.sqlite3

@@ -1,30 +1,13 @@
-#from common.Neo4jHandler import Neo4jHandler
-
-#from mcp.server.fastmcp import FastMCP
-
-from typing import List, Dict
-
-from datetime import datetime
-
 import os
-
 from sentence_transformers import SentenceTransformer
 
-from dotenv import load_dotenv
-
-
-from fhswf_mcp import mcp, neo_handler
+from . import mcp, neo_handler
 
 model = SentenceTransformer('paraphrase-multilingual-MiniLM-L12-v2')
 
 current_dir = os.path.dirname(os.path.abspath(__file__))
 
 project_root = os.path.abspath(os.path.join(current_dir, '..'))
-
-#mcp = FastMCP("FH SWF MCP")
-
-env_path = os.path.join(project_root, '.env')
-
 
 
 
@@ -199,7 +182,7 @@ def get_general_studyprogram_information(studyprogram: str):
         return "studyprogram must be in: " + ", ".join(all_studyprograms)
     
     result = neo_handler.get_studyprogram_info(studyprogram)
-    print(result)
+    
     if result:
         answer = result["name"] + "\n"
         for key, value in result.items():

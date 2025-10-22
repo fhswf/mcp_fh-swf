@@ -1,15 +1,9 @@
 import pickle
-#from mcp.server.fastmcp import FastMCP
-
 from typing import List, Dict
-
 from datetime import datetime
-
 import os
 
-from fhswf_mcp import mcp
-
-#mcp = FastMCP("Vorlesungsinformationen")
+from . import mcp
 
 current_dir = os.path.dirname(os.path.abspath(__file__))
 

@@ -1,14 +1,10 @@
-from mcp.server.fastmcp import FastMCP
 import logging
-from common.calendly import *
+from src.common.calendly import *
 
-from fhswf_mcp import mcp
+from . import mcp
 
 from datetime import date, datetime, timedelta, time
 
-#mcp = FastMCP("Calendly")
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
 
 # Funktion macht API Call an Calendly und fragt alle freien Termine in einem Zeitraum ab
 async def make_calendly_request(start_time, end_time) -> str:

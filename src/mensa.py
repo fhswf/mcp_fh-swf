@@ -1,9 +1,8 @@
-#from mcp.server.fastmcp import FastMCP
 import requests
 from bs4 import BeautifulSoup
 from datetime import datetime
 
-from fhswf_mcp import mcp
+from . import mcp
 
 # Funktion zum Abrufen des Mensaspeiseplans an den Standorten und verschiedenen Zeiten
 def fetch_mensa_speiseplan(date: str, location: str):
@@ -16,11 +15,12 @@ def fetch_mensa_speiseplan(date: str, location: str):
     #url = "https://www.stwdo.de/mensa-cafes-und-catering/fh-suedwestfalen/iserlohn/2025-09-17"
     
     # Bei keiner Angabe eines Datum das aktuelle im Format yyyy-mm-dd verwenden
-    if date is None:
-        date_obj = datetime.now()
+    
+    try:
+        date_obj = datetime.strptime(date, "%Y-%m-%d") if date else datetime.now()
+    except ValueError:
+        return "Invalid date format, please use YYYY-MM-DD"
         
-    else:
-        date_obj = datetime.strptime(date, "%Y-%m-%d")
         
     # Pruefen ob der Standort gueltig ist
     if not location.lower() in ["iserlohn", "hagen", "meschede", "soest"]:
@@ -41,7 +41,6 @@ def fetch_mensa_speiseplan(date: str, location: str):
         speiseplan_text += table.get_text(separator="\n") + "\n\n"
     return speiseplan_text.strip()
 
-#mcp = FastMCP(name="mensa")
 
 @mcp.tool()
 def mensa_speiseplan_handler(datum: str, location: str):
@@ -51,5 +50,4 @@ def mensa_speiseplan_handler(datum: str, location: str):
     except Exception as e:
         return {"error": str(e)}
 
-#if __name__ == "__main__":
-#    mcp.run()
+

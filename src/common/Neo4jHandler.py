@@ -1,7 +1,7 @@
 from neo4j import GraphDatabase
 import pandas as pd
 import math
-from common.neo4j_help_function import normalize_name
+from src.common.neo4j_help_function import normalize_name
 
 class Neo4jHandler:
     def __init__(self, uri, user, password):
