@@ -1,7 +1,8 @@
 from neo4j import GraphDatabase
 import pandas as pd
 import math
-from src.common.neo4j_help_function import normalize_name
+#from src.common.neo4j_help_function import normalize_name
+from common.neo4j_help_function import normalize_name
 
 class Neo4jHandler:
     def __init__(self, uri, user, password):
@@ -191,7 +192,7 @@ class Neo4jHandler:
         with self.driver.session() as session:
             for _, study_program in study_programs.items():
                 for program in study_program:
-                    doc_title = "Pr�fungsordnung " + program
+                    doc_title = "Prüfungsordnung " + program
                     doc_title_modul = "Modulhandbuch " + program
                     session.execute_write(self.create_document_node, doc_title)
                     session.execute_write(self.create_document_node, doc_title_modul)
@@ -364,7 +365,7 @@ class Neo4jHandler:
         MATCH (loc:Location {name: $location_name})-[:HOSTS]->(dep:Department)
         MATCH (dep)-[:OFFERS]->(sp:StudyProgram {name: $study_program_name})
         MATCH (doc:Document)-[:RELATED_TO]->(sp)
-        WHERE doc.title CONTAINS 'Pr�fungsordnung'
+        WHERE doc.title CONTAINS 'Prüfungsordnung'
 
         MATCH (doc)-[:HAS_SEGMENT]->(segment)
         WITH segment, vector.similarity.cosine($query_vector, segment.embedding) AS similarity, doc, sp, loc, dep
@@ -391,7 +392,7 @@ class Neo4jHandler:
     # Rahmenprüfungsordnung zu einer Anfrage suchen 
     def find_rpo_segments_similarity(self, query_vector, top_k=5):
         cypher = """
-        MATCH (doc:Document {title: "Rahmenpr�fungsordnung"})-[:HAS_SEGMENT]->(segment)
+        MATCH (doc:Document {title: "Rahmenprüfungsordnung"})-[:HAS_SEGMENT]->(segment)
         WITH segment, vector.similarity.cosine($query_vector, segment.embedding) AS similarity, doc
         RETURN doc.title AS document_title,
             segment.title AS segment_title,
