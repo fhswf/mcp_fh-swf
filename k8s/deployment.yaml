@@ -1,0 +1,61 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: fh-swf-mcp-deployment
+  namespace: mcp
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: fh-swf-mcp
+  template:
+    metadata:
+      labels:
+        app: fh-swf-mcp
+    spec:
+      automountServiceAccountToken: false
+      containers:
+      - name: fh-swf-mcp
+        image: fh-swf-mcp:latest
+        ports:
+        - containerPort: 8000
+        env:
+        # Calendly Configuration
+        - name: CALENDLY_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: app-secrets
+              key: calendly_api_key
+        
+        # Neo4j Configuration
+        - name: NEO4J_URI
+          valueFrom:
+            secretKeyRef:
+              name: app-secrets
+              key: neo4j_uri
+        - name: NEO4J_USERNAME
+          valueFrom:
+            secretKeyRef:
+              name: app-secrets
+              key: neo4j_username
+        - name: NEO4J_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: app-secrets
+              key: neo4j_password
+
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: fh-swf-mcp-service
+  namespace: mcp
+spec:
+  selector:
+    app: fh-swf-mcp
+  ports:
+    - protocol: TCP
+      port: 8000
+      targetPort: 8000
+  type: ClusterIP
