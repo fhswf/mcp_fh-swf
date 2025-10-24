@@ -4,8 +4,10 @@ kind: Kustomization
 resources:
 - deployment.yaml
 - ingress.yaml
+- pvc.yaml
+- neo4j.yaml
 
 images:
 - name: fh-swf-mcp
-  newName: ghcr.io/Tim1163/fh-swf-mcp
-  newTag: "0.1.0"
+  newName: ghcr.io/fhswf/mcp_fh-swf
+  newTag: "0.0.1"
