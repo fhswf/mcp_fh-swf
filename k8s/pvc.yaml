@@ -4,6 +4,8 @@ metadata:
   name: data-pvc
   labels:
     app: fh-swf-mcp
+    io.kubernetes.service: fh-swf-mcp-service
+    io.kubernetes.part-of: fh-swf-mcp
 spec:
   accessModes:
     - ReadWriteMany
