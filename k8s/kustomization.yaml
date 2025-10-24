@@ -8,4 +8,4 @@ resources:
 images:
 - name: fh-swf-mcp
   newName: ghcr.io/Tim1163/fh-swf-mcp
-  newTag: "0.1.0"
+  newTag: "0.0.1"
