@@ -20,7 +20,7 @@ spec:
           - containerPort: 8000
         volumeMounts:
           - mountPath: /app/data
-        name: data-volume 
+            name: data-volume 
         env:
           # Calendly Configuration
           - name: CALENDLY_API_KEY
