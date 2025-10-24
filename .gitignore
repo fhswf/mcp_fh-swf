@@ -14,3 +14,4 @@ chroma_db_employees/chroma.sqlite3
 k8s/secret.yaml
 *-secret.yaml
 .env
+
