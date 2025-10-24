@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - mcp_cluster
+      - main
 
 jobs:
   release:
@@ -54,7 +55,7 @@ jobs:
           context: .
           file: ./Dockerfile
           push: true
-          tags: ghcr.io/${{ github.actor }}/fh-swf-mcp:${{ steps.release.outputs.version }}
+          tags: ghcr.io/${{ github.actor }}/${{ github.repository }}:${{ steps.release.outputs.version }}
 
       # 6. Release Assets zu GitHub hochladen
       - name: Publish | Upload to GitHub Release Assets
