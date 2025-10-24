@@ -11,8 +11,7 @@
         "build_command_env": [],
         "version_variables": [
             "k8s/kustomization.yaml:newTag",
-            "pyproject.toml:version",
-            "__init.py__:__version__"
+            "pyproject.toml:version"
         ],
         "changelog": {
             "default_templates": {
