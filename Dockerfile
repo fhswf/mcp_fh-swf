@@ -1,19 +1,13 @@
-FROM python:3.11-slim
+FROM ghcr.io/astral-sh/uv:debian
 
-# Set working directory
+# Copy the project into the image
+ADD . /app
+
+# Sync the project into a new environment, asserting the lockfile is up to date
 WORKDIR /app
+RUN uv sync --locked
 
-# Copy requirements file and install dependencies
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+EXPOSE 8000
 
-# Copy source code
-COPY src/ ./src/
-
-# Copy data directory (nur vpis-Unterordner)
-COPY data/vpis/ ./data/vpis/
-
-# Command to run the application
-CMD ["python", "src/main.py"]
-
+CMD ["uv", "run", "main.py"]
 

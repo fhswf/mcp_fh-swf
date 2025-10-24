@@ -1,16 +1,9 @@
 import requests
 from typing import Any
-from datetime import datetime
-from zoneinfo import ZoneInfo
-from dotenv import load_dotenv
 import os
 
 # Nach folgender Implementierung: https://github.com/universal-mcp/calendly
 
-project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
-env_path = os.path.join(project_root, '.env')
-
-load_dotenv(dotenv_path=env_path )
 
 headers = {
     "Authorization": f"Bearer {os.getenv('CALENDLY_API_KEY')}",
