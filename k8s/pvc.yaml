@@ -3,7 +3,6 @@ kind: PersistentVolumeClaim
 metadata:
   name: data-pvc
   labels:
-    io.kubernetes.part-of: mcp_fh_swf
     app: fh-swf-mcp
 spec:
   accessModes:
