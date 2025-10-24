@@ -40,9 +40,11 @@ spec:
   selector:
     app: neo4j
   ports:
-    - protocol: TCP
+    - name: neo4j-http
+      protocol: TCP
       port: 7474
-    - protocol: TCP 
+    - name: neo4j-bolt
+      protocol: TCP
       port: 7687
 ---
 apiVersion: v1
