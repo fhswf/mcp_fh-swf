@@ -2,7 +2,6 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: fh-swf-mcp-deployment
-  namespace: mcp
 spec:
   replicas: 1
   selector:
@@ -50,7 +49,6 @@ apiVersion: v1
 kind: Service
 metadata:
   name: fh-swf-mcp-service
-  namespace: mcp
 spec:
   selector:
     app: fh-swf-mcp

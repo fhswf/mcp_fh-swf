@@ -7,5 +7,5 @@ resources:
 
 images:
 - name: fh-swf-mcp
-  newName: ghcr.io/Tim1163/fh-swf-mcp
+  newName: ghcr.io/fhswf/mcp_fh-swf
   newTag: "0.0.1"
