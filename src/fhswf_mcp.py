@@ -11,7 +11,11 @@ neo4j_password = os.getenv('NEO4J_PASSWORD')
 
 neo_handler = Neo4jHandler(neo4j_uri, neo4j_user, neo4j_password)
 
-mcp = FastMCP("FH SWF MCP Server")
+mcp = FastMCP(name = "FH SWF MCP Server", 
+              instructions = """Dieser MCP-Dienst beantwortet spezifisch Fragen mit Bezug zur Fachhochschule Süsdwestfalen (FH SWF). 
+              Er greift auf verschiedene Datenquellen zu, darunter das Mensa-System für Informationen zu Speiseplänen, das Calendly-System für Terminvereinbarungen, 
+              das VPIS-System für Verwaltungsprozesse und ein Graphdatenbanksystem für komplexe Beziehungsabfragen. 
+              Der MCP-Dienst soll präzise und relevante Antworten liefern, indem er die jeweiligen Datenquellen effektiv nutzt.""")
 
 
 import mensa

@@ -13,71 +13,72 @@ project_root = os.path.abspath(os.path.join(current_dir, '..'))
 
 @mcp.tool()
 def find_location_by_studyprogram(studyprogram: str) -> str:
-    """ find location by studyprogram name
+    """Finde den Standort anhand des Studiengangsnamens
     Args:
-        studyprogram: studyprogram name
+        studyprogram: Studiengangsname
     """
     all_studyprograms = neo_handler.find_all_studyprograms()
     
     if not studyprogram in all_studyprograms:
-        return "studyprogram must be in: " + ", ".join(all_studyprograms)
+        return "Studiengang muss einer von folgenden Werten sein: " + ", ".join(all_studyprograms)
 
     location = neo_handler.find_location_by_studyprogram(studyprogram)
 
-    return studyprogram + " is located in location " + location
+    return studyprogram + " befindet sich am Standort " + location
 
 @mcp.tool()
 def find_studyprograms_by_department(department: str) -> str:
-    """ find studyprogram by department name
+    """Finde Studiengänge anhand des Fachbereichsnamens
     Args:
-        department: department name
+        department: Fachbereichsname
     """
     all_departments = neo_handler.find_all_departments()
     
     if not department in all_departments:
-        return "department must be in: " + ", ".join(all_departments)
+        return "Fachbereich muss einer von folgenden Werten sein: " + ", ".join(all_departments)
 
     studyprograms = neo_handler.find_studyprograms_by_department(department)
 
-    return department + " offers " + ", ".join(studyprograms)
+    return department + " bietet " + ", ".join(studyprograms)
 
 @mcp.tool()
 def find_departments_by_location(location: str) -> str:
-    """ find departmens by location name
+    """Finde Fachbereiche anhand des Standortnamens
     Args:
-        location: location name
+        location: Standortname
     """
     all_locations = neo_handler.find_all_locations()
     
     if not location in all_locations:
-        return "location must be in: " + ", ".join(all_locations)
+        return "Standort muss einer von folgenden Werten sein: " + ", ".join(all_locations)
 
-    departments = neo_handler.find_studyprograms_by_department(location)
+    departments = neo_handler.find_departments_by_location(location)
 
-    return location + " hosts departmens " + ", ".join(departments)
-    
+    return location + " beherbergt Fachbereiche " + ", ".join(departments)
+
 @mcp.tool()
 def find_information_for_studyprogram(studyprogram: str, location: str, query: str) -> str:
-    """ find information for studyprogram
-    information about:
-    - general studyprogram information
-    - examination forms
-    - thesis, certificate
+    """Finde Informationen für den Studiengang
+    Informationen über:
+    - allgemeine Studiengangsinformationen
+    - Prüfungsformen
+    - Thesis, Zertifikate
+    - Modulbeschreibungen
 
     Args:
-        studyprogram: studyprogram name
-        location: location name
-        query: query for search
+        studyprogram: Studiengangsname
+        location: Standortname
+        query: Suchanfrage
     """
     all_locations = neo_handler.find_all_locations()
     
     if not location in all_locations:
-        return "location must be in: " + ", ".join(all_locations)
+        return "Standort muss einer von folgenden Werten sein: " + ", ".join(all_locations)
     
     all_studyprograms = neo_handler.find_all_studyprograms()
     
     if not studyprogram in all_studyprograms:
-        return "studyprogram must be in: " + ", ".join(all_studyprograms)
+        return "Studiengang muss einer von folgenden Werten sein: " + ", ".join(all_studyprograms)
     
     query_vector = model.encode(query).tolist()
 
@@ -97,21 +98,21 @@ def find_information_for_studyprogram(studyprogram: str, location: str, query: s
 
 @mcp.tool()
 def get_information_for_modul(studyprogram: str, modul: str) -> str:
-    """ get information for a modul
+    """Finde Informationen für ein Modul
     Args:
-        studyprogram: studyprogram name
-        modul: modul name
+        studyprogram: Studiengangsname
+        modul: Modulname
     """
 
     all_studyprograms = neo_handler.find_all_studyprograms()
     
     if not studyprogram in all_studyprograms:
-        return "studyprogram must be in: " + ", ".join(all_studyprograms)
+        return "Studiengang muss einer von folgenden Werten sein: " + ", ".join(all_studyprograms)
     
     all_modules = neo_handler.find_all_modules_by_studyprogram(studyprogram)
 
     if not modul in all_modules:
-        return "modul must be in: " + ", ".join(all_modules)
+        return "Modul muss eines von folgenden sein: " + ", ".join(all_modules)
 
     result = neo_handler.find_modul_info_by_studyprogram(studyprogram, modul)
 
@@ -123,15 +124,15 @@ def get_information_for_modul(studyprogram: str, modul: str) -> str:
 
 @mcp.tool()
 def get_person_information(name: str) -> str:
-    """ receive information about a person who works at FH SWF
-    returns:
-    - Workadress
-    - phone number
-    - mail adress
-    - homepage
+    """Finde Informationen über eine Person, die an der FH SWF arbeitet
+    Gibt zurück:
+    - Arbeitsadresse
+    - Telefonnummer
+    - E-Mail-Adresse
+    - Homepage
 
     Args:
-        name: name of the person
+        name: Name der Person
     """
 
     all_persons = neo_handler.find_all_persons()
@@ -151,18 +152,18 @@ def get_person_information(name: str) -> str:
 
 @mcp.tool()
 def find_modules_and_studyprograms_by_person(name: str) -> str:
-    """ receive information about which modules in which study program are held by the person
-    returns a listing :
-    - modul name
-    - studyprogram
+    """Finde Informationen darüber, welche Module in welchem Studiengang von der Person gehalten werden
+    Gibt eine Auflistung zurück:
+    - Modulname
+    - Studiengang
 
     Args:
-        name: name of the person
+        name: Name der Person
     """
     all_persons = neo_handler.find_all_persons()
 
     if not name in all_persons:
-        return "name must be in: " + ", ".join(all_persons)
+        return "Name muss einer von folgenden Werten sein: " + ", ".join(all_persons)
     
     result = neo_handler.find_modules_and_studyprograms_by_person(name)
 
@@ -176,10 +177,11 @@ def find_modules_and_studyprograms_by_person(name: str) -> str:
 
 @mcp.tool()
 def get_general_studyprogram_information(studyprogram: str):
+    """Finde allgemeine Informationen für den Studiengang"""
     all_studyprograms = neo_handler.find_all_studyprograms()
     
     if not studyprogram in all_studyprograms:
-        return "studyprogram must be in: " + ", ".join(all_studyprograms)
+        return "Studiengang muss einer von folgenden Werten sein: " + ", ".join(all_studyprograms)
     
     result = neo_handler.get_studyprogram_info(studyprogram)
     
@@ -190,5 +192,5 @@ def get_general_studyprogram_information(studyprogram: str):
                 answer += key + ": " + value + "\n"
         return answer
     else:
-        return "no information for studyprogram"
+        return "Keine Informationen für den Studiengang"
 
