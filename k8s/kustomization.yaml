@@ -4,6 +4,8 @@ kind: Kustomization
 resources:
 - deployment.yaml
 - ingress.yaml
+- pvc.yaml
+- neo4j.yaml
 
 images:
 - name: fh-swf-mcp
