@@ -35,7 +35,7 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: neo4j-service
+  name: neo4j
 spec:
   selector:
     app: neo4j
