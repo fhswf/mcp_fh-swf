@@ -95,7 +95,7 @@ async def _bib_search(query: str, search_area: str = 'any') -> str:
     """
     
     limit = 3
-    search_area = "any"
+    #search_area = "any"
     
     data = await make_api_request(query, search_area=search_area, limit=limit)
     
