@@ -52,7 +52,7 @@ def find_departments_by_location(location: str) -> str:
     if not location in all_locations:
         return "location must be in: " + ", ".join(all_locations)
 
-    departments = neo_handler.find_studyprograms_by_department(location)
+    departments = neo_handler.find_departments_by_location(location)
 
     return location + " hosts departmens " + ", ".join(departments)
     
