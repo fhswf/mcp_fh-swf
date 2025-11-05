@@ -15,6 +15,8 @@ import src.vpis_mcp
 _ = src.vpis_mcp
 import src.graphdata_mcp
 _ = src.graphdata_mcp
+import src.bib_mcp
+_ = src.bib_mcp
 
 
 if __name__ == "__main__":
