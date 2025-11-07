@@ -34,6 +34,7 @@ def format_information(modules: List[Dict[str, any]]) -> str:
 Activity Name: {m.get('name', 'Unknown')}
 Activity Type: {m.get('activity_type', 'Unknown')}
 Room: {m.get('room', 'Unknown')}
+Room Description: {m.get('room_description', 'Unknown')}
 """     
         for e in m['employees']:
             res += "Employee: " + e + "\n"

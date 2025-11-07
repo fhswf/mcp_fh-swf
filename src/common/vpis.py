@@ -80,6 +80,7 @@ def parse_xml_response(xml_content):
 
             ort = activity.findtext('./activity-locations/activity-location')
             act['room'] = ort
+            act['room_description'] = locations_description.get(ort, 'Unknown')
 
             # kurzen Namen aus der Aktivität mit dem langen Namen aus dem staff Tag ersetzen
             lehrpersonal = [p.text for p in activity.findall('./activity-staffs/activity-staff')]
