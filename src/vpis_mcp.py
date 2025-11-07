@@ -1,16 +1,8 @@
 from typing import List, Dict
 from datetime import datetime, timedelta
-import os
 from src.common.vpis import collect_vpis_data
 
 from . import mcp
-
-current_dir = os.path.dirname(os.path.abspath(__file__))
-
-project_root = os.path.abspath(os.path.join(current_dir, '..'))
-
-vpis_data_path = os.path.join(project_root, 'data', 'vpis')
-
 
 vpis_name = {}
 vpis_room = {}
