@@ -1,11 +1,12 @@
 import requests
 from bs4 import BeautifulSoup
 from datetime import datetime
+from typing import Literal
 
 from . import mcp
 
 # Funktion zum Abrufen des Mensaspeiseplans an den Standorten und verschiedenen Zeiten
-def fetch_mensa_speiseplan(date: str, location: str):
+def fetch_mensa_speiseplan(date: str, location: Literal["iserlohn", "hagen", "meschede", "soest"]):
     
     """Get the menu at a specific cafeteria at a given date.
     Args:
@@ -43,7 +44,7 @@ def fetch_mensa_speiseplan(date: str, location: str):
 
 
 @mcp.tool()
-def mensa_speiseplan_handler(datum: str, location: str):
+def mensa_speiseplan_handler(datum: str, location: Literal["iserlohn", "hagen", "meschede", "soest"]):
     try:
         speiseplan = fetch_mensa_speiseplan(datum, location)
         return {"speiseplan": speiseplan}
