@@ -3,7 +3,7 @@ from bs4 import BeautifulSoup
 from datetime import datetime
 
 from . import mcp
-from .common.types import FH_SWF_Location
+from src.common.types import FH_SWF_Location
 
 # Funktion zum Abrufen des Mensaspeiseplans an den Standorten und verschiedenen Zeiten
 def fetch_mensa_speiseplan(date: str, location: FH_SWF_Location):

@@ -4,7 +4,7 @@ from datetime import datetime
 import os
 
 from . import mcp
-from .common.types import FH_SWF_Location
+from src.common.types import FH_SWF_Location
 
 current_dir = os.path.dirname(os.path.abspath(__file__))
 
