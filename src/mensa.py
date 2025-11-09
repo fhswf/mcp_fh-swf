@@ -1,12 +1,12 @@
 import requests
 from bs4 import BeautifulSoup
 from datetime import datetime
-from typing import Literal
 
 from . import mcp
+from .common.types import FH_SWF_Location
 
 # Funktion zum Abrufen des Mensaspeiseplans an den Standorten und verschiedenen Zeiten
-def fetch_mensa_speiseplan(date: str, location: Literal["iserlohn", "hagen", "meschede", "soest"]):
+def fetch_mensa_speiseplan(date: str, location: FH_SWF_Location):
     
     """Get the menu at a specific cafeteria at a given date.
     Args:
@@ -22,10 +22,6 @@ def fetch_mensa_speiseplan(date: str, location: Literal["iserlohn", "hagen", "me
     except ValueError:
         return "Invalid date format, please use YYYY-MM-DD"
         
-        
-    # Pruefen ob der Standort gueltig ist
-    if not location.lower() in ["iserlohn", "hagen", "meschede", "soest"]:
-        return "location must be in [iserlohn, hagen, meschede, soest]"
     location = location.lower()
     
     # Datum in URL-Format bringen (yyyy-mm-dd) und Anfrage an Website mit Standort und Datum senden
@@ -44,7 +40,7 @@ def fetch_mensa_speiseplan(date: str, location: Literal["iserlohn", "hagen", "me
 
 
 @mcp.tool()
-def mensa_speiseplan_handler(datum: str, location: Literal["iserlohn", "hagen", "meschede", "soest"]):
+def mensa_speiseplan_handler(datum: str, location: FH_SWF_Location):
     try:
         speiseplan = fetch_mensa_speiseplan(datum, location)
         return {"speiseplan": speiseplan}
