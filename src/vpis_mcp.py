@@ -1,9 +1,10 @@
 import pickle
-from typing import List, Dict
+from typing import List, Dict, Optional
 from datetime import datetime
 import os
 
 from . import mcp
+from src.common.types import FH_SWF_Location
 
 current_dir = os.path.dirname(os.path.abspath(__file__))
 
@@ -66,14 +67,11 @@ def get_room_activity_information(room: str):
     return format_information(vpis_room[room])
 
 @mcp.tool()
-def get_all_rooms(location: str=None):
+def get_all_rooms(location: Optional[FH_SWF_Location] = None):
     """Get Information about all rooms
     Args:
         location: select rooms from a location
     """
-    locations = ["Iserlohn", "Hagen", "Soest", "Meschede"]
-    if location and location not in locations:
-        return "location must be in: " + ", ".join(locations)
     if location:
         all_rooms = [room for room in list(vpis_room.keys()) if room.startswith(location[:2])]
         return "all rooms at location " + location + ": " + ", ".join(all_rooms)
@@ -81,7 +79,7 @@ def get_all_rooms(location: str=None):
         return "all rooms: " + ", ".join(list(vpis_room.keys()))
 
 @mcp.tool()
-def get_all_free_rooms(location: str, date: str, begin: str, end: str, building: str=None):
+def get_all_free_rooms(location: FH_SWF_Location, date: str, begin: str, end: str, building: Optional[str] = None):
     """Get Information about all free rooms
     Args:
         location: select rooms from a location
@@ -90,40 +88,35 @@ def get_all_free_rooms(location: str, date: str, begin: str, end: str, building:
         begin: begin time in format %H:%M
         end: end time in format %H:%M
     """
-    locations = ["Iserlohn", "Hagen", "Soest", "Meschede"]
-    if location and location not in locations:
-        return "location must be in: " + ", ".join(locations)
-    if location:
+    if building:
+        all_rooms = [room for room in list(vpis_room.keys()) if room.startswith(location[:2] + "-" + building)]
+    else:
+        all_rooms = [room for room in list(vpis_room.keys()) if room.startswith(location[:2])]
 
-        if building:
-            all_rooms = [room for room in list(vpis_room.keys()) if room.startswith(location[:2] + "-" + building)]
-        else:
-            all_rooms = [room for room in list(vpis_room.keys()) if room.startswith(location[:2])]
-
-        if date and begin and end:
-            begin = datetime.strptime(begin, "%H:%M").time()
-            end = datetime.strptime(end, "%H:%M").time()
-            free_rooms = []
-            for room in all_rooms:
-                counter = 0
-                for activity in vpis_room[room]:
-                    for d in activity["dates"]:
-                        if d["date"] == date:
-                            d_begin = datetime.strptime(d["begin"], "%H:%M").time()
-                            d_end = datetime.strptime(d["end"], "%H:%M").time()
-                            if begin < d_end and d_begin < end:
-                                
-                                counter += 1
-                if counter == 0:
-                    free_rooms.append(room)
-                
-                
-            return "all free rooms at location " + location + " in buildung " + building + " at the " + date + " from " + str(begin) + " to " + str(end) + ": " + ", ".join(free_rooms)
+    if date and begin and end:
+        begin_time = datetime.strptime(begin, "%H:%M").time()
+        end_time = datetime.strptime(end, "%H:%M").time()
+        free_rooms = []
+        for room in all_rooms:
+            counter = 0
+            for activity in vpis_room[room]:
+                for d in activity["dates"]:
+                    if d["date"] == date:
+                        d_begin = datetime.strptime(d["begin"], "%H:%M").time()
+                        d_end = datetime.strptime(d["end"], "%H:%M").time()
+                        if begin_time < d_end and d_begin < end_time:
+                            counter += 1
+            if counter == 0:
+                free_rooms.append(room)
         
-        if building:
-            return "all rooms at location " + location + " in buildung " + building + ": " + ", ".join(all_rooms)
-        else:
-            return "all rooms at location " + location + ": " + ", ".join(all_rooms)
+        location_str = f"at location {location}"
+        building_str = f" in buildung {building}" if building else ""
+        return f"all free rooms {location_str}{building_str} at the {date} from {begin_time} to {end_time}: {', '.join(free_rooms)}"
+    
+    if building:
+        return "all rooms at location " + location + " in buildung " + building + ": " + ", ".join(all_rooms)
+    else:
+        return "all rooms at location " + location + ": " + ", ".join(all_rooms)
 
 #@mcp.tool()
 def get_employee_activity_information(employee: str):
@@ -136,6 +129,3 @@ def get_employee_activity_information(employee: str):
         return "employee must be in: " + ", ".join(employees)
     
     return format_information(vpis_employee[employee])
-
-
-
