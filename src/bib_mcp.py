@@ -159,7 +159,7 @@ async def bib_search_by_publisher(query: str) -> str:
 
 @mcp.tool()
 async def bib_search_general(query: str) -> str:
-    """ find bib entries for a query by isbn
+    """ find bib entries for a query
     Args:
         query: search query
     """

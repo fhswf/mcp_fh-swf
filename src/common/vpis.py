@@ -114,11 +114,22 @@ async def collect_vpis_data():
     formatted_dates = [date.strftime('%Y-%m-%d') for date in next_14_days]
     # Standorte
     location_strings = ["Iserlohn", "Hagen", "Meschede", "Soest"]
+    # Semester für URL bestimmen
+    month = today.month 
+    year = today.year
+
+    semester = ""
+    if 3 <= month <= 8:
+        semester = f"SS{year}"
+    else:
+        if month in [1, 2]:
+            year -= 1
+        semester = f"WS{year}"
 
     # URLs für alle Standorte und die nächsten 14 Tage erstellen
     urls = []
     for loc in location_strings:
-        base_url = f'https://vpis.fh-swf.de/WS2025/raum.php3?Raum=&Standort={loc[:2]}&Template=XML&Tag='
+        base_url = f'https://vpis.fh-swf.de/{semester}/raum.php3?Raum=&Standort={loc[:2]}&Template=XML&Tag='
         urls.extend([base_url + date for date in formatted_dates])
 
     # Daten abrufen
@@ -136,16 +147,16 @@ async def collect_vpis_data():
             for key, value in v_name.items():
                 if key not in vpis_name:
                     vpis_name[key] = []
-                vpis_name[key].extend(value if isinstance(value, list) else [value])
+                vpis_name[key].extend(value)
             
             for key, value in v_room.items():
                 if key not in vpis_room:
                     vpis_room[key] = []
-                vpis_room[key].extend(value if isinstance(value, list) else [value])
+                vpis_room[key].extend(value)
             
             for key, value in v_employee.items():
                 if key not in vpis_employee:
                     vpis_employee[key] = []
-                vpis_employee[key].extend(value if isinstance(value, list) else [value])
+                vpis_employee[key].extend(value)
 
     return vpis_name, vpis_room, vpis_employee

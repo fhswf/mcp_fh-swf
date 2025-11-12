@@ -125,7 +125,7 @@ async def get_all_free_rooms(location: str, date: str, begin: str, end: str, bui
         else:
             return "all rooms at location " + location + ": " + ", ".join(all_rooms)
 
-#@mcp.tool()
+@mcp.tool()
 async def get_employee_activity_information(employee: str):
     """Get Information about the activities of a employee
     Args:
