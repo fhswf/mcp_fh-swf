@@ -23,8 +23,3 @@ When answering questions, you should use the provided tools to fetch accurate an
 """
 
 mcp = FastMCP(name="FH-SWF MCP server", instructions=server_instructions)
-#mcp_app = mcp.http_app(path='/')
-
-#app = FastAPI(title="MCP API", lifespan=mcp_app.lifespan)
-
-#app.mount("/mcp", mcp_app)
