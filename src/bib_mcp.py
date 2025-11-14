@@ -119,7 +119,7 @@ async def _bib_search(query: str, search_area: str = 'any', rtype: str = None) -
     return data_to_string(data, query=query, search_area=search_area)
 
 @mcp.tool()
-async def bib_search_by_title(query: str, rtype: str = None) -> str:
+async def bib_search_by_title(query: str, rtype: str) -> str:
     """ find bib entries for a query by title
     Args:
         query: search query
@@ -128,7 +128,7 @@ async def bib_search_by_title(query: str, rtype: str = None) -> str:
     return await _bib_search(query, search_area="title", rtype=rtype)
 
 @mcp.tool()
-async def bib_search_by_author(query: str, rtype: str = None) -> str:
+async def bib_search_by_author(query: str, rtype: str) -> str:
     """ find bib entries for a query by author
     Args:
         query: search query
@@ -137,7 +137,7 @@ async def bib_search_by_author(query: str, rtype: str = None) -> str:
     return await _bib_search(query, search_area="creator", rtype=rtype)
 
 @mcp.tool()
-async def bib_search_by_subject(query: str, rtype: str = None) -> str:
+async def bib_search_by_subject(query: str, rtype: str) -> str:
     """ find bib entries for a query by subject
     Args:
         query: search query
@@ -146,7 +146,7 @@ async def bib_search_by_subject(query: str, rtype: str = None) -> str:
     return await _bib_search(query, search_area="subject", rtype=rtype)
 
 @mcp.tool()
-async def bib_search_by_isbn(query: str, rtype: str = None) -> str:
+async def bib_search_by_isbn(query: str, rtype: str) -> str:
     """ find bib entries for a query by isbn
     Args:
         query: search query
@@ -155,7 +155,7 @@ async def bib_search_by_isbn(query: str, rtype: str = None) -> str:
     return await _bib_search(query, search_area="isbn", rtype=rtype)
 
 @mcp.tool()
-async def bib_search_by_issn(query: str, rtype: str = None) -> str:
+async def bib_search_by_issn(query: str, rtype: str) -> str:
     """ find bib entries for a query by issn
     Args:
         query: search query
@@ -164,7 +164,7 @@ async def bib_search_by_issn(query: str, rtype: str = None) -> str:
     return await _bib_search(query, search_area="issn", rtype=rtype)
 
 @mcp.tool()
-async def bib_search_by_doi(query: str, rtype: str = None) -> str:
+async def bib_search_by_doi(query: str, rtype: str) -> str:
     """ find bib entries for a query by doi
     Args:
         query: search query
@@ -173,7 +173,7 @@ async def bib_search_by_doi(query: str, rtype: str = None) -> str:
     return await _bib_search(query, search_area="doi", rtype=rtype)
 
 @mcp.tool()
-async def bib_search_by_publisher(query: str, rtype: str = None) -> str:
+async def bib_search_by_publisher(query: str, rtype: str) -> str:
     """ find bib entries for a query by publisher
     Args:
         query: search query
