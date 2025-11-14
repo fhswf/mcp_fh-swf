@@ -93,37 +93,36 @@ async def get_all_free_rooms(location: str, date: str, begin: str, end: str, bui
     locations = ["Iserlohn", "Hagen", "Soest", "Meschede"]
     if location and location not in locations:
         return "location must be in: " + ", ".join(locations)
-    if location:
+    if not location or not date or not begin or not end:
+        return "please provide location, date, begin and end"
+    
+    if building:
+        all_rooms = [room for room in list(vpis_room.keys()) if room.startswith(location[:2] + "-" + building)]
+    else:
+        all_rooms = [room for room in list(vpis_room.keys()) if room.startswith(location[:2])]
 
-        if building:
-            all_rooms = [room for room in list(vpis_room.keys()) if room.startswith(location[:2] + "-" + building)]
-        else:
-            all_rooms = [room for room in list(vpis_room.keys()) if room.startswith(location[:2])]
+    begin = datetime.strptime(begin, "%H:%M").time()
+    end = datetime.strptime(end, "%H:%M").time()
+    free_rooms = []
+    for room in all_rooms:
+        counter = 0
+        for activity in vpis_room[room]:
+            for d in activity["dates"]:
+                if d["date"] == date:
+                    d_begin = datetime.strptime(d["begin"], "%H:%M").time()
+                    d_end = datetime.strptime(d["end"], "%H:%M").time()
+                    if begin < d_end and d_begin < end:
+                        counter += 1
+                        break
+            if counter > 0:
+                break
+        if counter == 0:
+            free_rooms.append(room)
 
-        if date and begin and end:
-            begin = datetime.strptime(begin, "%H:%M").time()
-            end = datetime.strptime(end, "%H:%M").time()
-            free_rooms = []
-            for room in all_rooms:
-                counter = 0
-                for activity in vpis_room[room]:
-                    for d in activity["dates"]:
-                        if d["date"] == date:
-                            d_begin = datetime.strptime(d["begin"], "%H:%M").time()
-                            d_end = datetime.strptime(d["end"], "%H:%M").time()
-                            if begin < d_end and d_begin < end:
-                                
-                                counter += 1
-                if counter == 0:
-                    free_rooms.append(room)
-                
-                
-            return "all free rooms at location " + location + " in buildung " + building + " at the " + date + " from " + str(begin) + " to " + str(end) + ": " + ", ".join(free_rooms)
-        
-        if building:
-            return "all rooms at location " + location + " in buildung " + building + ": " + ", ".join(all_rooms)
-        else:
-            return "all rooms at location " + location + ": " + ", ".join(all_rooms)
+    if building:
+        return "all free rooms at location " + location + " in buildung " + building + " at the " + date + " from " + str(begin) + " to " + str(end) + ": " + ", ".join(free_rooms)
+    else:
+        return "all free rooms at location " + location + " at the " + date + " from " + str(begin) + " to " + str(end) + ": " + ", ".join(free_rooms)
 
 @mcp.tool()
 async def get_employee_activity_information(employee: str):
