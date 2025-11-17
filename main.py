@@ -28,6 +28,6 @@ asyncio.run(src.portale_mcp.init())
 
 if __name__ == "__main__":
     try:
-        mcp.run(transport="stdio")
+        mcp.run(transport="http", host="0.0.0.0", port=8000, stateless_http=True )
     finally:
         neo_handler.close() 

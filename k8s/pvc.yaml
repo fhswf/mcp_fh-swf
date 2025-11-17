@@ -1,0 +1,19 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  annotations:
+  finalizers:
+    - kubernetes.io/pvc-protection
+  labels:
+    app: fh-swf-mcp
+    io.kubernetes.part-of: fh-swf-mcp
+    io.kubernetes.service: fh-swf-mcp-service
+  name: data-pvc
+  namespace: mcp-fh-swf
+spec:
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 5Gi
+  storageClassName: ceph-filesystem
