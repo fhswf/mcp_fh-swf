@@ -72,7 +72,9 @@ ProjektKI/
     └── scripts/
         ├── graphdatenbank.ipynb         # Notebook zum Aufbau der Neo4j Datenbank
         ├── employee_information.py      # Script zur Verarbeitung von Mitarbeiterdaten
-        └── vpis.ipynb                   # Notebook zum Auslesen von VPIS-Daten
+        ├── vpis.ipynb                   # Notebook zum Auslesen von VPIS-Daten
+        ├── PDF_Preprocess.ipynb         # Notebook zum Vorverarbeiten der Modulhandbücher
+        ├── TableExtraction.ipynb        # Notebook zur Extraktion von Modulinformationen aus den vorverarbeiteten Modulhandbüchern
 ```
 
 ## Entwicklung
@@ -86,6 +88,7 @@ ProjektKI/
 - `data_preprocessing/scripts/graphdatenbank.ipynb` - Notebook zum Einfügen der Informationen in die Datenbank
 - `data_preprocessing/scripts/employee_information.py` - Sammlung von Mitarbeiterdaten
 - `data_preprocessing/scripts/vpis.ipynb` - Notebook zum Auslesen von Informationen aus dem VPIS
-
+- `data_preprocessing/scripts/PDF_Preprocess.ipynb` - Notebook zum Auschneiden der Modulhandbücher
+- `data_preprocessing/scripts/TableExtraction.ipynb ` - Notebook zum Auslesen der Modulhandbücher mit Docling
 ---
 
