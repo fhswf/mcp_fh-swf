@@ -5,13 +5,21 @@ Ein Model Context Protocol (MCP) Server für die Fachhochschule Südwestfalen, e
 ## Schnelleinstieg
 
 ### Voraussetzungen
-- Python 3.8+
+- Python 3.13+
 - Neo4j Datenbank
-- Dependencies aus `requirements.txt`
 
 ### Installation
+#### lokale Installation
 ```bash
-pip install -r requirements.txt
+# Virtuelles Environment erstellen und Abhängigkeiten installieren
+uv venv
+uv sync
+
+# Environment aktivieren (Windows)
+.venv\Scripts\activate
+
+# MCP-Server starten
+uv run main.py
 ```
 
 ### Konfiguration
@@ -21,11 +29,18 @@ NEO4J_URI=bolt://localhost:7687
 NEO4J_USERNAME=neo4j
 NEO4J_PASSWORD=your_password
 CALENDLY_API_TOKEN=your_token  # optional für die Verwendung von Calendly
+BIBLIOTHEK_API_KEY=your_token  # optional für die Suche in der Bibliothek
 ```
 
 ### Server starten
 ```bash
-python main.py
+# Environment aktivieren
+.venv\Scripts\activate  # Windows
+# oder
+source .venv/bin/activate  # Linux/Mac
+
+# Anwendung starten
+uv run main.py
 ```
 
 ## Verfügbare Tools
@@ -47,34 +62,46 @@ Die Implementierung enthält Tools zum Zugriff auf Informationen aus den folgend
 
 ```
 ProjektKI/
-├── main.py                          # Haupteinstiegspunkt - startet den MCP Server
-├── requirements.txt                 # Python Abhängigkeiten
-├── Dockerfile                       # Docker-Konfiguration für Container-Deployment
+├── main.py                                     # Haupteinstiegspunkt — startet den MCP-Server
+├── pyproject.toml                              # Projektmetadaten & Abhängigkeiten (für `uv` / packaging)
+├── uv.lock                                     # Lockfile für `uv`
+├── requirements.txt                            # Python Abhängigkeiten
+├── .env                                        # Lokale Umgebungsvariablen (nicht ins VCS)
+├── Dockerfile                                  # Docker-Build-Anweisungen
 ├── k8s/
-│   └── secret.yaml                  # Kubernetes Secrets
-├──src/                                 # Hauptquellcode
-│   ├── __init__.py                      # MCP Server Initialisierung
-│   ├── bib_mcp.py                       # Bibliotheks-Tools
-│   ├── calendly_mcp.py                  # Calendly Integrations-Tools
-│   ├── faq_mcp.py                       # FAQ-Tools
-│   ├── graphdata_mcp.py                 # Studiengänge-Tools (Neo4j)
-│   ├── mensa.py                         # Mensa-Speiseplan-Tool
-│   ├── news_events_mcp.py               # News & Events-Tools
-│   ├── portale_mcp.py                   # Loginportale-Tools
-│   ├── vpis_mcp.py                      # VPIS-Tools
-│   └── common/                          # Gemeinsame Utilities
-│       ├── Neo4jHandler.py              # Neo4j Datenbank-Operationen
-│       ├── neo4j_help_function.py       # Neo4j Hilfsfunktionen
-│       ├── study_programs.py            # Studienganginformationen
-│       ├── calendly.py                  # Calendly API
-│       └── vpis.py                      # VPIS Daten abrufen
-├──data_preprocessing/                  # Datenverarbeitungs-Scripts
-    └── scripts/
-        ├── graphdatenbank.ipynb         # Notebook zum Aufbau der Neo4j Datenbank
-        ├── employee_information.py      # Script zur Verarbeitung von Mitarbeiterdaten
-        ├── vpis.ipynb                   # Notebook zum Auslesen von VPIS-Daten
-        ├── PDF_Preprocess.ipynb         # Notebook zum Vorverarbeiten der Modulhandbücher
-        ├── TableExtraction.ipynb        # Notebook zur Extraktion von Modulinformationen aus den vorverarbeiteten Modulhandbüchern
+│   ├── deployment.yaml                         # K8s-Deployment
+│   ├── ingress.yaml                            # K8s-Ingress
+│   ├── kustomization.yaml                      # Kustomize-Konfiguration
+│   ├── neo4j.yaml                              # Neo4j-Konfiguration
+│   ├── pvc.yaml                                # Persistent-Volume-Konfiguration
+│   └── secret.yaml                             # Kubernetes-Secret
+├── src/                                        # Quellcode des MCP-Servers
+│   ├── __init__.py                             # Initialisiert `mcp` und `Neo4jHandler`
+│   ├── bib_mcp.py                              # Bibliothekssuche
+│   ├── calendly_mcp.py                         # Calendly-Integration
+│   ├── faq_mcp.py                              # FAQ-Tools
+│   ├── graphdata_mcp.py                        # Zugriff auf Studiengangsdaten (Neo4j)
+│   ├── mensa.py                                # Mensa-Speiseplan
+│   ├── news_events_mcp.py                      # News & Events Tools
+│   ├── portale_mcp.py                          # Loginportal-Informationen
+│   ├── vpis_mcp.py                             # VPIS Tools
+│   └── common/                                 # Gemeinsame Utilities und Handler
+│       ├── __init__.py
+│       ├── Neo4jHandler.py                     # Wrapper/Helper für Neo4j-Operationen
+│       ├── neo4j_help_function.py              # Hilfsfunktionen für Neo4j
+│       ├── pdfCrawler.py                       # PDF-Crawler
+│       ├── study_programs.py                   # Studiengangsinformationen
+│       ├── calendly.py                         # Calendly-API-Wrapper
+│       └── vpis.py                             # VPIS Daten laden
+├── data_preprocessing/                         # Skripte und Notebooks zur Datenaufbereitung
+│   └── scripts/
+│       ├── graphdatenbank.ipynb                # Aufbau der Graphdatenbank
+│       ├── employee_information.py             # Mitarbeitenden Informationen
+│       ├── PDF_Preprocess.ipynb                # Notebook zum Vorverarbeiten der Modulhandbücher 
+│       ├── TableExtraction.ipynb               # Notebook zur Extraktion von Modulinformationen aus den vorverarbeiteten Modulhandbüchern 
+│       ├── docling_pruefungsordnungen.ipynb    # Notebook zur Umwandlung der Prüfungsordnungen in Markdown-Dateien
+│       └── vpis.ipynb                          # VPIS Daten auslesen
+└── data/                                       # Daten
 ```
 
 ## Entwicklung
@@ -88,7 +115,9 @@ ProjektKI/
 - `data_preprocessing/scripts/graphdatenbank.ipynb` - Notebook zum Einfügen der Informationen in die Datenbank
 - `data_preprocessing/scripts/employee_information.py` - Sammlung von Mitarbeiterdaten
 - `data_preprocessing/scripts/vpis.ipynb` - Notebook zum Auslesen von Informationen aus dem VPIS
-- `data_preprocessing/scripts/PDF_Preprocess.ipynb` - Notebook zum Auschneiden der Modulhandbücher
-- `data_preprocessing/scripts/TableExtraction.ipynb ` - Notebook zum Auslesen der Modulhandbücher mit Docling
+- `data_preprocessing/scripts/PDF_Preprocess.ipynb` - Notebook zum Vorverarbeiten der Modulhandbücher
+- `data_preprocessing/scripts/TableExtraction.ipynb` - Notebook zur Extraktion von Modulinformationen aus den vorverarbeiteten Modulhandbüchern
+- `data_preprocessing/scripts/docling_pruefungsordnungen.ipynb` - Notebook zur Umwandlung der Prüfungsordnungen in Markdown-Dateien
+
 ---
 
