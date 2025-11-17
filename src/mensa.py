@@ -43,7 +43,12 @@ def fetch_mensa_speiseplan(date: str, location: str):
 
 
 @mcp.tool()
-def mensa_speiseplan_handler(datum: str, location: str):
+def get_cafeteria_menu(datum: str, location: str):
+    """Get the menu at a specific cafeteria at a given date and location
+    Args:   
+        datum: date in format YYYY-MM-DD
+        location: cafeteria location (iserlohn, hagen, meschede, soest)
+    """
     try:
         speiseplan = fetch_mensa_speiseplan(datum, location)
         return {"speiseplan": speiseplan}

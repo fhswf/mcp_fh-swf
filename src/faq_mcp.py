@@ -2,18 +2,15 @@ import chromadb
 from chromadb.utils.embedding_functions import SentenceTransformerEmbeddingFunction
 
 from mcp.server.fastmcp import FastMCP
-import asyncio
 from bs4 import BeautifulSoup
 import logging
 
 from urllib.parse import urljoin
 import requests
 
-FH_SCRAPE_URL = "https://www.fh-swf.de/de/studierende/studienorganisation/faqs_1.php"
+from . import mcp
 
-mcp = FastMCP("FAQ")
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+FH_SCRAPE_URL = "https://www.fh-swf.de/de/studierende/studienorganisation/faqs_1.php"
 
 # ChromaDB Vektordatenbank und Embeddingfunktion definieren
 client = chromadb.EphemeralClient()
@@ -25,15 +22,8 @@ collection = client.get_or_create_collection(
     embedding_function=embedder
 )
 
-async def build_rag():
-    doc_to_db()
-    return
-
-def doc_to_db():
-    
-    """ Scrape all informations from the website and store them in the vectordatabase
-    """
-    
+# Funktion zum Extrahieren und Speichern der FAQ-Daten in der Vektordatenbank
+async def doc_to_db():
     # Anfrage an die Webseite senden und alle <accordion> tags finden
     response = requests.get(FH_SCRAPE_URL)
     response.raise_for_status()
@@ -44,7 +34,7 @@ def doc_to_db():
     for i, accordion in enumerate(accordions):
         accordion_items = accordion.find_all("div", class_="accordion__item")
         
-        # Iterieren durch alle Eintraege des jeweiligen <accordion> und extrahieren der Informationen
+        # Iterieren durch alle Eintraege des jeweiligen <accordion> tag und extrahieren der Informationen
         for j, accordion_item in enumerate(accordion_items):
             headline = accordion_item.find("h3", class_="headline--3")
             headline_text = headline.get_text(strip=True) if headline else None
@@ -70,32 +60,20 @@ Text: {body_text}
             )
 
 @mcp.tool()
-def get_context(search_term: str) -> str:
+def search_in_fhswf_faq(search_term: str) -> str:
     """ search the vectordatabase for informations about a topic
     Args:
-        search_termn: a string containing informations about the topic
+        search_termn: the topic to search for
     """
-    
-    logger.info(search_term)
-
     # Vektordatenbank nach Eintraegen durchsuchen und diese als Kontext bereitstellen
     results = collection.query(
         query_texts=[search_term],
         n_results=1
     )
-    logger.info(results)
     if results and results['documents'][0]:
-        context = results['documents'][0][0]
+        return results['documents'][0][0]
     else:
         return "Keine Ergebnisse gefunden"
 
-    return context
-
 async def init():
-    await build_rag()
-    logger.info("Server bereit!")
-
-
-if __name__ == "__main__":
-    asyncio.run(init())
-    mcp.run()
+    await doc_to_db()
