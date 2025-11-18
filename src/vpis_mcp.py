@@ -46,7 +46,7 @@ async def get_activity_information(modul: str):
     await check_and_update_vpis_data()
     modules = list(vpis_name.keys())
     if modul not in modules:
-        return "modul must be in: " + ", ".join(modules)
+        return "please call the tool again, modul must be in: " + ", ".join(modules)
     
     return format_information(vpis_name[modul])
 
@@ -59,7 +59,7 @@ async def get_room_activity_information(room: str):
     await check_and_update_vpis_data()
     rooms = list(vpis_room.keys())
     if room not in rooms:
-        return "room must be in: " + ", ".join(rooms)
+        return "please call the tool again, room must be in: " + ", ".join(rooms)
     
     return format_information(vpis_room[room])
 
@@ -72,7 +72,7 @@ async def get_all_rooms(location: str=None):
     await check_and_update_vpis_data()
     locations = ["Iserlohn", "Hagen", "Soest", "Meschede"]
     if location and location not in locations:
-        return "location must be in: " + ", ".join(locations)
+        return "please call the tool again, location must be in: " + ", ".join(locations)
     if location:
         all_rooms = [room for room in list(vpis_room.keys()) if room.startswith(location[:2])]
         return "all rooms at location " + location + ": " + ", ".join(all_rooms)
@@ -92,9 +92,9 @@ async def get_all_free_rooms(location: str, date: str, begin: str, end: str, bui
     await check_and_update_vpis_data()
     locations = ["Iserlohn", "Hagen", "Soest", "Meschede"]
     if location and location not in locations:
-        return "location must be in: " + ", ".join(locations)
+        return "please call the tool again, location must be in: " + ", ".join(locations)
     if not location or not date or not begin or not end:
-        return "please provide location, date, begin and end"
+        return "please call the tool again, please provide location, date, begin and end"
     
     if building:
         all_rooms = [room for room in list(vpis_room.keys()) if room.startswith(location[:2] + "-" + building)]
@@ -133,6 +133,6 @@ async def get_employee_activity_information(employee: str):
     await check_and_update_vpis_data()
     employees = list(vpis_employee.keys())
     if employee not in employees:
-        return "employee must be in: " + ", ".join(employees)
+        return "please call the tool again, employee must be in: " + ", ".join(employees)
     
     return format_information(vpis_employee[employee])
