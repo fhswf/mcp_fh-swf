@@ -60,19 +60,19 @@ async def get_meeting_slots(start_date: str, end_date: str):
     try:
         start_date = datetime.strptime(start_date, "%Y-%m-%d").date()
     except ValueError:
-        return "Invalid start_date format"
+        return "please call the tool again, Invalid start_date format"
     
     try:
         end_date = datetime.strptime(end_date, "%Y-%m-%d").date()
     except ValueError:
-        return "Invalid end_date format"
+        return "please call the tool again, Invalid end_date format"
 
     # Pruefen ob das Enddatum nach dem Startdatum liegt und nicht mehr als 7 Tage entfernt ist
     if end_date < start_date:
-        return "Invalid date, end_date is before the start_date"
+        return "please call the tool again, Invalid date, end_date is before the start_date"
     
     elif end_date > start_date + timedelta(days = 7):
-        return "Invalid date, end_date is more than 7 days away"
+        return "please call the tool again, Invalid date, end_date is more than 7 days away"
     
     # Bei aktuellem Tag 60 Sekunden addieren um Datum in der Vergangenheit zu vermeiden
     if start_date == date.today():

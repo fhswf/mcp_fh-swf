@@ -19,12 +19,12 @@ def fetch_mensa_speiseplan(date: str, location: str):
     try:
         date_obj = datetime.strptime(date, "%Y-%m-%d") if date else datetime.now()
     except ValueError:
-        return "Invalid date format, please use YYYY-MM-DD"
+        return "please call the tool again, Invalid date format, please use YYYY-MM-DD"
         
         
     # Pruefen ob der Standort gueltig ist
     if not location.lower() in ["iserlohn", "hagen", "meschede", "soest"]:
-        return "location must be in [iserlohn, hagen, meschede, soest]"
+        return "please call the tool again, location must be in [iserlohn, hagen, meschede, soest]"
     location = location.lower()
     
     # Datum in URL-Format bringen (yyyy-mm-dd) und Anfrage an Website mit Standort und Datum senden

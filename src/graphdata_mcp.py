@@ -20,7 +20,7 @@ def find_location_by_studyprogram(studyprogram: str) -> str:
     all_studyprograms = neo_handler.find_all_studyprograms()
     
     if not studyprogram in all_studyprograms:
-        return "studyprogram must be in: " + ", ".join(all_studyprograms)
+        return "please call the tool again, studyprogram must be in: " + ", ".join(all_studyprograms)
 
     location = neo_handler.find_location_by_studyprogram(studyprogram)
 
@@ -35,7 +35,7 @@ def find_studyprograms_by_department(department: str) -> str:
     all_departments = neo_handler.find_all_departments()
     
     if not department in all_departments:
-        return "department must be in: " + ", ".join(all_departments)
+        return "please call the tool again, department must be in: " + ", ".join(all_departments)
 
     studyprograms = neo_handler.find_studyprograms_by_department(department)
 
@@ -50,14 +50,14 @@ def find_departments_by_location(location: str) -> str:
     all_locations = neo_handler.find_all_locations()
     
     if not location in all_locations:
-        return "location must be in: " + ", ".join(all_locations)
+        return "please call the tool again, location must be in: " + ", ".join(all_locations)
 
     departments = neo_handler.find_departments_by_location(location)
 
     return location + " hosts departmens " + ", ".join(departments)
     
 @mcp.tool()
-def find_information_for_studyprogram(studyprogram: str, location: str, query: str) -> str:
+def find_information_for_studyprogram(studyprogram: str, query: str) -> str:
     """ find information for studyprogram
     information about:
     - general studyprogram information
@@ -69,19 +69,15 @@ def find_information_for_studyprogram(studyprogram: str, location: str, query: s
         location: location name
         query: query for search
     """
-    all_locations = neo_handler.find_all_locations()
-    
-    if not location in all_locations:
-        return "location must be in: " + ", ".join(all_locations)
     
     all_studyprograms = neo_handler.find_all_studyprograms()
     
     if not studyprogram in all_studyprograms:
-        return "studyprogram must be in: " + ", ".join(all_studyprograms)
+        return "please call the tool again, studyprogram must be in: " + ", ".join(all_studyprograms)
     
     query_vector = model.encode(query).tolist()
 
-    result = neo_handler.find_studyprogram_segments_similarity(studyprogram, location, query_vector)
+    result = neo_handler.find_studyprogram_segments_similarity(studyprogram, query_vector)
 
     answer = ""
     for res in result:
@@ -106,12 +102,12 @@ def get_information_for_modul(studyprogram: str, modul: str) -> str:
     all_studyprograms = neo_handler.find_all_studyprograms()
     
     if not studyprogram in all_studyprograms:
-        return "studyprogram must be in: " + ", ".join(all_studyprograms)
+        return "please call the tool again, studyprogram must be in: " + ", ".join(all_studyprograms)
     
     all_modules = neo_handler.find_all_modules_by_studyprogram(studyprogram)
 
     if not modul in all_modules:
-        return "modul must be in: " + ", ".join(all_modules)
+        return "please call the tool again, modul must be in: " + ", ".join(all_modules)
 
     result = neo_handler.find_modul_info_by_studyprogram(studyprogram, modul)
 
@@ -137,7 +133,7 @@ def get_person_information(name: str) -> str:
     all_persons = neo_handler.find_all_persons()
 
     if not name in all_persons:
-        return "name must be in: " + ", ".join(all_persons)
+        return "please call the tool again, name must be in: " + ", ".join(all_persons)
     
     result = neo_handler.find_person_by_name(name)
 
@@ -162,7 +158,7 @@ def find_modules_and_studyprograms_by_person(name: str) -> str:
     all_persons = neo_handler.find_all_persons()
 
     if not name in all_persons:
-        return "name must be in: " + ", ".join(all_persons)
+        return "please call the tool again, name must be in: " + ", ".join(all_persons)
     
     result = neo_handler.find_modules_and_studyprograms_by_person(name)
 
@@ -179,7 +175,7 @@ def get_general_studyprogram_information(studyprogram: str):
     all_studyprograms = neo_handler.find_all_studyprograms()
     
     if not studyprogram in all_studyprograms:
-        return "studyprogram must be in: " + ", ".join(all_studyprograms)
+        return "please call the tool again, studyprogram must be in: " + ", ".join(all_studyprograms)
     
     result = neo_handler.get_studyprogram_info(studyprogram)
     
