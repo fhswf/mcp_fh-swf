@@ -41,6 +41,11 @@ def fetch_mensa_speiseplan(date: str, location: str):
         speiseplan_text += table.get_text(separator="\n") + "\n\n"
     return speiseplan_text.strip()
 
+@mcp.tool()
+def get_current_date():
+    """Get the current date in format YYYY-MM-DD"""
+    current_date = datetime.now().strftime("%Y-%m-%d")
+    return {"current_date": current_date}
 
 @mcp.tool()
 def get_cafeteria_menu(datum: str, location: str):
