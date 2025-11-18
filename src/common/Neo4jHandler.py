@@ -291,85 +291,18 @@ class Neo4jHandler:
                 MERGE (m)-[:HAS_LECTURER]->(p)
                 """
                 tx.run(cypher_link_new, module_name=module_name, person_name=raw_name)
-            
-
-    def create_vector_index(self, label="Segment", property="embedding", index_name="textsegment_embedding", dimensions=384, similarity_function="cosine"):
-        """
-        Legt einen Vektorindex auf dem angegebenen Label und Property an.
-        """
-        cypher = f"""
-        CREATE VECTOR INDEX {index_name}
-        FOR (n:{label}) ON (n.{property})
-        OPTIONS {{
-            indexConfig: {{
-                `vector.dimensions`: {dimensions},
-                `vector.similarity_function`: '{similarity_function}'
-            }}
-        }}
-        """
-        with self.driver.session() as session:
-            session.run(cypher)
-    
-    def vector_similarity_search(self, query_vector, index_name="textsegment_embedding", top_k=10):
-        """
-        Führt eine Vektor-Ähnlichkeitssuche durch und gibt die ähnlichsten Knoten zuruck.
-        """
-        if query_vector is None or not isinstance(query_vector, list):
-            raise ValueError("query_vector muss eine nicht-leere Liste von Zahlen sein.")
-
-        # Ähnlichkeitssuche über den Vektorindex
-        cypher = f"""
-        CALL db.index.vector.queryNodes('{index_name}', {top_k}, $query_vector)
-        YIELD node, score
-        RETURN node, score
-        ORDER BY score DESC
-        """
-        with self.driver.session() as session:
-            results = session.run(cypher, query_vector=query_vector)
-            return [(record["node"], record["score"]) for record in results]
-        
-        
-    def hybrid_enhanced_search(self, query_vector, top_k=10):
-        # Ähnlichkeitssuche über den Vektorindex
-        # Ermittlung der benachbarten Knoten
-        # Ähnlichkeitssuche über die benachbarten Knoten
-        # Ermittlung des zugehörigen Studiengangs
-        cypher = """
-        CALL db.index.vector.queryNodes('textsegment_embedding', $top_k, $query_vector) YIELD node AS segment, score AS segment_score
-        MATCH (document)-[:HAS_SEGMENT]->(segment)
-        MATCH (document)-[:HAS_SEGMENT]->(otherSegment)
-        WHERE otherSegment <> segment
-        WITH segment, segment_score, document, otherSegment,
-            vector.similarity.cosine($query_vector, otherSegment.embedding) AS otherSegmentScore
-        ORDER BY otherSegmentScore DESC
-        WITH segment, segment_score, document,
-            collect({title: otherSegment.title, text: otherSegment.content, score: otherSegmentScore})[0..10] AS topOtherSegments
-        OPTIONAL MATCH (document)-[:RELATED_TO]->(studyProgram)
-        RETURN segment.title AS segment_title,
-            segment.content AS segment_text,
-            segment_score,
-            topOtherSegments,
-            document.title AS document_title,
-            studyProgram.name AS study_program
-        ORDER BY segment_score DESC
-        LIMIT $top_k
-        """
-        with self.driver.session() as session:
-            results = session.run(cypher, query_vector=query_vector, top_k=top_k)
-            return [record.data() for record in results]
-    
+             
     # Informationen zu einem Studiengang suchen, anhand dem Namen und Standort
-    def find_studyprogram_segments_similarity(self, study_program_name, location_name, query_vector, top_k=5):
+    def find_studyprogram_segments_similarity(self, study_program_name, query_vector, top_k=5):
         cypher = """
-        MATCH (loc:Location {name: $location_name})-[:HOSTS]->(dep:Department)
+        MATCH (dep:Department)
         MATCH (dep)-[:OFFERS]->(sp:StudyProgram {name: $study_program_name})
         MATCH (doc:Document)-[:RELATED_TO]->(sp)
         WHERE doc.title CONTAINS 'Prüfungsordnung'
 
         MATCH (doc)-[:HAS_SEGMENT]->(segment)
-        WITH segment, vector.similarity.cosine($query_vector, segment.embedding) AS similarity, doc, sp, loc, dep
+        WITH segment, vector.similarity.cosine($query_vector, segment.embedding) AS similarity, doc, sp, dep
         RETURN sp.name AS study_program,
-            loc.name AS location,
             dep.name AS department,
             doc.title AS document_title,
             segment.title AS segment_title,
@@ -382,7 +315,6 @@ class Neo4jHandler:
             results = session.run(
                 cypher,
                 study_program_name=study_program_name,
-                location_name=location_name,
                 query_vector=query_vector,
                 top_k=top_k
             )
