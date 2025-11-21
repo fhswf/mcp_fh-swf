@@ -1,5 +1,6 @@
 from fastmcp import FastMCP
 import os
+import asyncio
 from dotenv import load_dotenv
 load_dotenv()
 
@@ -15,6 +16,14 @@ import src.vpis_mcp
 _ = src.vpis_mcp
 import src.graphdata_mcp
 _ = src.graphdata_mcp
+import src.bib_mcp
+_ = src.bib_mcp
+import src.faq_mcp
+asyncio.run(src.faq_mcp.init())
+import src.news_events_mcp
+_ = src.news_events_mcp
+import src.portale_mcp
+asyncio.run(src.portale_mcp.init())
 
 
 if __name__ == "__main__":
