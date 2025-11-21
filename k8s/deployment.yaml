@@ -22,6 +22,12 @@ spec:
           - mountPath: /app/data
             name: data-volume 
         env:
+          - name: BIBLIOTHEK_API_KEY
+            valueFrom:
+              secretKeyRef:
+                name: app-secrets
+                key: bibliothek_api_key
+                
           # Calendly Configuration
           - name: CALENDLY_API_KEY
             valueFrom:
