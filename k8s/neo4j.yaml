@@ -27,6 +27,8 @@ spec:
               secretKeyRef:
                 name: neo4j-secrets
                 key: neo4j_auth
+          - name: NEO4J_server_config_strict__validation_enabled
+            value: "false"                
       volumes:
       - name: neo4j-data
         persistentVolumeClaim:
