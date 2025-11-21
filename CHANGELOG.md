@@ -1,6 +1,48 @@
 # CHANGELOG
 
 
+## v0.2.0 (2025-11-21)
+
+### Chores
+
+- Delete llm graph transformer
+  ([`b279e10`](https://github.com/fhswf/mcp_fh-swf/commit/b279e103d8ce95efd06ea4e90253c824f3096d17))
+
+- Rename neo4j service
+  ([`1a0e9d6`](https://github.com/fhswf/mcp_fh-swf/commit/1a0e9d61e17049ea3c0c66f50adbc7eda158941b))
+
+- Update lock file
+  ([`fcee2cf`](https://github.com/fhswf/mcp_fh-swf/commit/fcee2cf6d523a928a02d51dacfebac3cb128abc9))
+
+- Update pyproject.toml and uv.lock with required dependencies
+  ([`d262ef9`](https://github.com/fhswf/mcp_fh-swf/commit/d262ef92d3ebf71ddae00ad91cf361056fc41429))
+
+- Update README
+  ([`982532a`](https://github.com/fhswf/mcp_fh-swf/commit/982532ae8cf01b86f85880bc8778522c36f385fd))
+
+### Features
+
+- Add room description to output
+  ([`5bfe0e9`](https://github.com/fhswf/mcp_fh-swf/commit/5bfe0e9e0bea923538380c28ccb7ebe6d559f4d2))
+
+- Add room description to vpis output
+  ([`a68b352`](https://github.com/fhswf/mcp_fh-swf/commit/a68b352e37168cc6bb92bde7e35f893c7d3a8714))
+
+- Filter bib search by resource type
+  ([`ae22223`](https://github.com/fhswf/mcp_fh-swf/commit/ae2222318a50f0ce073ccd65a7316adc1f361336))
+
+- Filter bib search by resource type
+  ([`495682f`](https://github.com/fhswf/mcp_fh-swf/commit/495682ff885ad64f872bc8778657179871b90862))
+
+### Refactoring
+
+- Adjust tool implementation details
+  ([`faa8420`](https://github.com/fhswf/mcp_fh-swf/commit/faa8420c6c00e60c5372ec21bd754ad94b9182b5))
+
+- Restructure code
+  ([`d97983d`](https://github.com/fhswf/mcp_fh-swf/commit/d97983dacc5dbda5bd727fa87d9b8bcf073261a8))
+
+
 ## v0.1.0 (2025-10-24)
 
 ### Chores
