@@ -19,12 +19,12 @@ def fetch_mensa_speiseplan(date: str, location: str):
     try:
         date_obj = datetime.strptime(date, "%Y-%m-%d") if date else datetime.now()
     except ValueError:
-        return "Invalid date format, please use YYYY-MM-DD"
+        return "please call the tool again, Invalid date format, please use YYYY-MM-DD"
         
         
     # Pruefen ob der Standort gueltig ist
     if not location.lower() in ["iserlohn", "hagen", "meschede", "soest"]:
-        return "location must be in [iserlohn, hagen, meschede, soest]"
+        return "please call the tool again, location must be in [iserlohn, hagen, meschede, soest]"
     location = location.lower()
     
     # Datum in URL-Format bringen (yyyy-mm-dd) und Anfrage an Website mit Standort und Datum senden
@@ -41,9 +41,19 @@ def fetch_mensa_speiseplan(date: str, location: str):
         speiseplan_text += table.get_text(separator="\n") + "\n\n"
     return speiseplan_text.strip()
 
+@mcp.tool()
+def get_current_date():
+    """Get the current date in format YYYY-MM-DD"""
+    current_date = datetime.now().strftime("%Y-%m-%d")
+    return {"current_date": current_date}
 
 @mcp.tool()
-def mensa_speiseplan_handler(datum: str, location: str):
+def get_cafeteria_menu(datum: str, location: str):
+    """Get the menu at a specific cafeteria at a given date and location
+    Args:   
+        datum: date in format YYYY-MM-DD
+        location: cafeteria location (iserlohn, hagen, meschede, soest)
+    """
     try:
         speiseplan = fetch_mensa_speiseplan(datum, location)
         return {"speiseplan": speiseplan}

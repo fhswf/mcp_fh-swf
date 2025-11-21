@@ -12,6 +12,7 @@ src/serverFHSWF/Neo4jHandler_alt.py
 src/common/__pycache__/*
 chroma_db_employees/chroma.sqlite3
 k8s/secret.yaml
+src/llm_graph/*
 *-secret.yaml
 .env
 
