@@ -1,6 +1,14 @@
 # CHANGELOG
 
 
+## v0.2.1 (2025-11-21)
+
+### Bug Fixes
+
+- Update uv.lock
+  ([`a060e5f`](https://github.com/fhswf/mcp_fh-swf/commit/a060e5f65fa53d9dac0e2c38a53de4c2fb11361f))
+
+
 ## v0.2.0 (2025-11-21)
 
 ### Chores
