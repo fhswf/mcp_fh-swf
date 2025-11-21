@@ -1,9 +1,15 @@
 # CHANGELOG
 
 
+## v0.2.2 (2025-11-21)
+
+
 ## v0.2.1 (2025-11-21)
 
 ### Bug Fixes
+
+- Update Dockerfile
+  ([`17b7065`](https://github.com/fhswf/mcp_fh-swf/commit/17b7065506e96e6b7e6fa57e24dc4d1dcd1c24ef))
 
 - Update uv.lock
   ([`a060e5f`](https://github.com/fhswf/mcp_fh-swf/commit/a060e5f65fa53d9dac0e2c38a53de4c2fb11361f))
