@@ -1,21 +1,29 @@
 from typing import List, Dict
 from datetime import datetime, timedelta
-from src.common.vpis import collect_vpis_data
-
+import base64
+from cryptography.hazmat.primitives.ciphers.aead import AESGCM
+import jwt
+import aiohttp
+from datetime import date
+import re
+from src.common.vpis import *
+from fastmcp.server.dependencies import get_http_headers
 from . import mcp
+
 
 vpis_name = {}
 vpis_room = {}
 vpis_employee = {}
+vpis_room_meta = {}
 last_update = None
 CACHE_DURATION = timedelta(hours=2)
 
 # Daten bei einer Anfrage aktualisieren, wenn die Daten älter als CACHE_DURATION sind
 async def check_and_update_vpis_data():
-    global vpis_name, vpis_room, vpis_employee, last_update
+    global vpis_name, vpis_room, vpis_employee, vpis_room_meta, last_update
 
     if last_update is None or datetime.now() - last_update > CACHE_DURATION:
-        vpis_name, vpis_room, vpis_employee = await collect_vpis_data()
+        vpis_name, vpis_room, vpis_employee, vpis_room_meta  = await collect_vpis_data()
         last_update = datetime.now()
 
 
@@ -70,14 +78,21 @@ async def get_all_rooms(location: str=None):
         location: select rooms from a location
     """
     await check_and_update_vpis_data()
-    locations = ["Iserlohn", "Hagen", "Soest", "Meschede"]
-    if location and location not in locations:
-        return "please call the tool again, location must be in: " + ", ".join(locations)
+    location_prefixes = {
+    "Iserlohn": "Is",
+    "Hagen": "Ha",
+    "Soest": "So",
+    "Meschede": "Me",
+    "Lüdenscheid": "Ls",
+    }
+    if location and location not in location_prefixes:
+        return "please call the tool again, location must be in: " + ", ".join(location_prefixes)
     if location:
-        all_rooms = [room for room in list(vpis_room.keys()) if room.startswith(location[:2])]
+        prefix = location_prefixes[location]
+        all_rooms = [room for room in list(vpis_room.keys()) if room.startswith(prefix)]
         return "all rooms at location " + location + ": " + ", ".join(all_rooms)
     else:
-        return "all rooms: " + ", ".join(list(vpis_room.keys()))
+        return "all rooms: " + ", ".join(vpis_room.keys())
 
 @mcp.tool()
 async def get_all_free_rooms(location: str, date: str, begin: str, end: str, building: str=None):
@@ -136,3 +151,163 @@ async def get_employee_activity_information(employee: str):
         return "please call the tool again, employee must be in: " + ", ".join(employees)
     
     return format_information(vpis_employee[employee])
+
+def decrypt_token(encrypted_payload: str) -> str:
+    """Decrypt AES-GCM encrypted token."""
+    parts = encrypted_payload.split(".")
+    if len(parts) != 3:
+        raise ValueError("Invalid token format")
+    
+    nonce = base64.b64decode(parts[0])
+    ciphertext = base64.b64decode(parts[1])
+    auth_tag = base64.b64decode(parts[2])
+    
+    return AESGCM(ENCRYPTION_KEY).decrypt(nonce, ciphertext + auth_tag, None).decode("utf-8")
+
+
+def decode_jwt_payload(jwt_token: str) -> dict:
+    """Decode JWT payload without signature verification."""
+    return jwt.decode(jwt_token, options={"verify_signature": False})
+
+def _extract_selected_option(html: str, field_name: str) -> str | None:
+    """Extract selected option value from an HTML select field."""
+    pattern = rf'<select[^>]*name="{re.escape(field_name)}"[^>]*>(.*?)</select>'
+    select_match = re.search(pattern, html, re.DOTALL | re.IGNORECASE)
+    if not select_match:
+        return None
+    
+    for opt in re.finditer(r'<option([^>]*)value="([^"]+)"([^>]*)>', select_match.group(1), re.IGNORECASE):
+        if 'selected' in opt.group(1).lower() or 'selected' in opt.group(3).lower():
+            return opt.group(2)
+    return None
+
+
+async def get_booking_form_defaults(room: str, date: str, begin: str, end: str, hostkey: str, suitability: str) -> dict:
+    """Get pre-selected department and scheduler for a room booking."""
+    semester_info = await get_current_semester()
+    url = f"https://vpis.fh-swf.de/{semester_info['semester']}/raumsuche.php3"
+    
+    post_data = {
+        "Auswahl": "Buchungsanfrageformular",
+        "Standort": get_location_from_room(room),
+        "LocationSuitability": suitability,
+        "Template": "2021",
+        "SucheDatum": date,
+        "SucheStart": begin,
+        "SucheEnde": end,
+        "Raum[]": hostkey,
+    }
+
+    async with aiohttp.ClientSession() as session:
+        async with session.post(url, data=post_data) as response:
+            if response.status != 200:
+                raise ValueError(f"Failed to get booking form: status {response.status}")
+            html = await response.text(encoding='iso-8859-1')
+    
+    return {
+        "department": _extract_selected_option(html, "Veranstaltung[Department]"),
+        "scheduler": _extract_selected_option(html, "scheduler"),
+    }
+
+
+@mcp.tool()
+async def book_room(room: str, date: str, begin: str, end: str, event_name: str, event_type: str) -> str:
+    """Book a room for a specific location.
+
+    Args:
+        room: Room name (e.g., 'Is-A006', 'Ha-H102').
+        date: Date in DD.MM.YYYY format.
+        begin: Start time in HH:MM format.
+        end: End time in HH:MM format.
+        event_name: Name of the event.
+        event_type: Event type key (bauarbeiten, buchen, coaching, etc.).
+
+    Returns:
+        Confirmation message or error description.
+    """
+    await check_and_update_vpis_data()
+
+    try:
+        semester_info = await get_current_semester()
+    except ValueError as e:
+        return str(e)
+
+    event_type_lower = event_type.lower().strip()
+    if event_type_lower not in EVENT_TYPE_MAP:
+        return f"Invalid event_type '{event_type}'. Valid: {', '.join(EVENT_TYPE_MAP.keys())}"
+
+    # Auth
+    headers = get_http_headers(include_all=True)
+    token = headers.get("authorization", "").replace("Bearer ", "").strip()
+    try:
+        jwt_payload = decode_jwt_payload(decrypt_token(token))
+        name, email = jwt_payload.get("name"), jwt_payload.get("email")
+    except Exception:
+        return "Unauthorized: Invalid or missing authentication token."
+
+    # Room metadata
+    try:
+        location = get_location_from_room(room)
+        hostkey = get_room_hostkey(room, vpis_room_meta)
+        suitability = get_room_suitability(room, vpis_room_meta)
+        weekday = get_weekday_from_date(date)
+    except ValueError as e:
+        return str(e)
+
+    # Form defaults
+    try:
+        defaults = await get_booking_form_defaults(room, date, begin, end, hostkey, suitability)
+        if not defaults.get("department"):
+            return f"Could not determine department for room {room}."
+        if not defaults.get("scheduler"):
+            return f"Could not determine scheduler for room {room}."
+    except Exception as e:
+        return f"Failed to get booking form defaults: {e}"
+
+    # Submit booking
+    post_data = {
+        "Auswahl": "Buchungsanfrageformular",
+        "Veranstaltung[LocationSuitability]": suitability,
+        "Template": "2021",
+        "Standort": location,
+        "Wochentag": weekday,
+        "SucheDatum": date,
+        "SucheStart": begin,
+        "SucheEnde": end,
+        "Raum[]": hostkey,
+        "Veranstaltung[Department]": defaults["department"],
+        "Veranstaltung[Name]": event_name,
+        "Veranstaltung[Art]": EVENT_TYPE_MAP[event_type_lower],
+        "Nutzer[Name]": name,
+        "Nutzer[eMail]": email,
+        "Nutzung": "",
+        "url": "",
+        "scheduler": defaults["scheduler"],
+        "submit": "absenden",
+    }
+
+    url = f"https://vpis.fh-swf.de/{semester_info['semester']}/raumsuche.php3"
+    try:
+        async with aiohttp.ClientSession() as session:
+            async with session.post(url, data=post_data) as response:
+                if response.status != 200:
+                    text = await response.text(encoding='iso-8859-1')
+                    return f"Booking failed with status {response.status}: {text[:500]}"
+                
+                text = await response.text(encoding='iso-8859-1')
+                success = (
+                "Es wurde eine Raumbuchung " in text
+                and "Die/Der verantwortliche Planer/in" in text
+                and "wird die Veranstaltung freigeben (Schritt 3 von 3)." in text
+                )
+
+                if not success:
+                    result = "Error while booking a room!"
+                    return result
+                result = f"Raum '{room}' {'Buchungsanfrage gesendet'}!\n"
+                result += f"Datum: {date} ({weekday})\nZeit: {begin} - {end}\nVeranstaltung: {event_name}"
+                result += "\nBitte prüfen Sie die Bestätigung per E-Mail."
+                return result
+                
+    except aiohttp.ClientError as e:
+        return f"Network error: {e}"
