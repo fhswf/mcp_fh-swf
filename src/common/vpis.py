@@ -2,7 +2,9 @@ from datetime import datetime, timedelta
 import aiohttp
 import asyncio
 import xml.etree.ElementTree as ET
-
+import os
+import re
+from datetime import date
 # Funktion zum Abrufen einer Webseite
 async def fetch_page(session, url):
     async with session.get(url) as response:
@@ -20,12 +22,13 @@ def parse_xml_response(xml_content):
     v_name = {}
     v_room = {}
     v_employee = {}
+    v_room_meta = {}
     
     try:
         # ElementTree erstellen
         root = ET.fromstring(xml_content)
     except Exception as e:
-        return {}, {}, {}
+        return {}, {}, {}, {}
 
     # Bereich Staffs finden
     staffs = root.find('staffs')
@@ -55,6 +58,22 @@ def parse_xml_response(xml_content):
             value = location.findtext('description')
             if key:
                 locations_description[key] = value
+                hostkey_elem = location.find('hostkey')
+                v_room_meta[key] = {
+                    "size": location.get('size'),
+                    "sizeklausur": location.get('sizeklausur'),
+                    "hostkey": hostkey_elem.text if hostkey_elem is not None else None,
+                    "description": value,
+                    "suitabilities": []
+                }
+                suitabilities = location.find('location-suitabilities')
+                if suitabilities is not None:
+                    for suit in suitabilities.findall('location-suitability'):
+                        v_room_meta[key]["suitabilities"].append({
+                            "id": suit.text,
+                            "primary": suit.get('primary') == 'J',
+                            "secondary": suit.get('secondary') == 'J'
+                        })
 
     # Bereich Activities finden
     activities = root.find('activities')
@@ -104,7 +123,7 @@ def parse_xml_response(xml_content):
                 if act not in v_employee[employee]:
                     v_employee[employee].append(act)
 
-    return v_name, v_room, v_employee
+    return v_name, v_room, v_employee, v_room_meta 
 
 # Funktion zum Sammeln der VPIS-Daten
 async def collect_vpis_data():
@@ -112,8 +131,6 @@ async def collect_vpis_data():
     today = datetime.today()
     next_14_days = [today + timedelta(days=i) for i in range(14)]
     formatted_dates = [date.strftime('%Y-%m-%d') for date in next_14_days]
-    # Standorte
-    location_strings = ["Iserlohn", "Hagen", "Meschede", "Soest"]
     # Semester für URL bestimmen
     month = today.month 
     year = today.year
@@ -128,8 +145,9 @@ async def collect_vpis_data():
 
     # URLs für alle Standorte und die nächsten 14 Tage erstellen
     urls = []
-    for loc in location_strings:
-        base_url = f'https://vpis.fh-swf.de/{semester}/raum.php3?Raum=&Standort={loc[:2]}&Template=XML&Tag='
+    for loc in LOCATION_PREFIXES:
+        prefix = LOCATION_PREFIXES[loc]
+        base_url = f'https://vpis.fh-swf.de/{semester}/raum.php3?Raum=&Standort={prefix}&Template=XML&Tag='
         urls.extend([base_url + date for date in formatted_dates])
 
     # Daten abrufen
@@ -138,11 +156,12 @@ async def collect_vpis_data():
     vpis_name = {}
     vpis_room = {}
     vpis_employee = {}
+    vpis_room_meta = {}
     
     # Antworten auslesen und in gemeinsamem Dictionary speichern
     for resp in responses:
         if resp and not isinstance(resp, Exception):
-            v_name, v_room, v_employee = parse_xml_response(resp)
+            v_name, v_room, v_employee, v_room_meta  = parse_xml_response(resp)
             # Dicts zusammenführen
             for key, value in v_name.items():
                 if key not in vpis_name:
@@ -158,5 +177,100 @@ async def collect_vpis_data():
                 if key not in vpis_employee:
                     vpis_employee[key] = []
                 vpis_employee[key].extend(value)
+            vpis_room_meta.update(v_room_meta)
 
-    return vpis_name, vpis_room, vpis_employee
+    return vpis_name, vpis_room, vpis_employee, vpis_room_meta  
+
+
+ENCRYPTION_KEY = bytes.fromhex(os.environ.get("ENCRYPTION_KEY", ""))
+VPISAPP_URL = "https://vpis.fh-swf.de/vpisapp"
+
+EVENT_TYPE_MAP = {
+    "bauarbeiten": "#SPLUS0D38C4",
+    "buchen": "#SPLUS754A57",
+    "coaching": "#SPLUS5AC30E",
+    "exkursion": "#SPLUSD3D0E9",
+    "info": "#SPLUS7FEFE3",
+    "klausur": "#SPLUS1AF112",
+    "klausur_online": "#SPLUS1B6B84",
+    "kolloquium": "#SPLUSF3A37E",
+    "kompaktseminar": "#SPLUSD20DA7",
+    "lerngruppe": "#SPLUS59501F",
+    "servicearbeiten": "#SPLUS8DDC33",
+    "sitzung": "#SPLUS24D328",
+    "sitzung_online": "#SPLUS4E4766",
+    "sprechstunde": "#SPLUSFBCF5E",
+    "tagesseminar": "#SPLUSD68CBF",
+    "tagung": "#SPLUS68EECD",
+    "training": "#SPLUS6D0378",
+    "tutorium": "#SPLUSFBCE67",
+    "tutorium_online": "#SPLUSB7BA6F",
+    "vortrag": "#SPLUSD68CC1",
+    "workshop": "#SPLUSD68CC0",
+    "elearning": "#SPLUS2FBB8E",
+}
+
+WEEKDAY_MAP = {0: "Mo", 1: "Di", 2: "Mi", 3: "Do", 4: "Fr", 5: "Sa", 6: "So"}
+
+LOCATION_PREFIXES = {"Is": "Is-", "Ha": "Ha-", "Me": "Me-", "So": "So-", "Ls": "Ls-"}
+
+async def get_current_semester() -> dict:
+    """Fetch current semester info from vpisapp XML."""
+    try:
+        async with aiohttp.ClientSession() as session:
+            async with session.get(VPISAPP_URL) as response:
+                if response.status != 200:
+                    raise ValueError(f"Failed to fetch vpisapp: status {response.status}")
+                xml_content = await response.text(encoding='iso-8859-1')
+    except aiohttp.ClientError as e:
+        raise ValueError(f"Network error fetching vpisapp: {e}")
+    
+    pattern = r'<locationsearch\s+href="([^"]+)"\s+begin="([^"]+)"\s+end="([^"]+)"\s+type="[^"]*">([^<]+)</locationsearch>'
+    matches = re.findall(pattern, xml_content)
+    
+    if not matches:
+        raise ValueError("No locationsearch entries found in vpisapp")
+    
+    today = date.today()
+    for href, begin_str, end_str, semester_name in matches:
+        begin_date = datetime.strptime(begin_str, "%Y-%m-%d").date()
+        end_date = datetime.strptime(end_str, "%Y-%m-%d").date()
+        if begin_date <= today <= end_date:
+            return {"semester": semester_name.strip(), "url": href}
+    
+    available = [f"{name} ({begin} to {end})" for _, begin, end, name in matches]
+    raise ValueError(f"No semester available for {today.isoformat()}. Available: {', '.join(available)}")
+
+
+def get_weekday_from_date(date_str: str) -> str:
+    """Convert DD.MM.YYYY to German weekday abbreviation."""
+    return WEEKDAY_MAP[datetime.strptime(date_str, "%d.%m.%Y").weekday()]
+
+
+def get_location_from_room(room_name: str) -> str:
+    """Extract location prefix from room name."""
+    for loc, prefix in LOCATION_PREFIXES.items():
+        if room_name.startswith(prefix):
+            return loc
+    raise ValueError(f"Unknown location prefix in room: {room_name}")
+
+
+def get_room_hostkey(room_name: str, vpis_room_meta: dict) -> str:
+    """Get hostkey for a room from vpis_room_meta."""
+    if room_name not in vpis_room_meta:
+        raise ValueError(f"Unknown room: {room_name}")
+    hostkey = vpis_room_meta[room_name].get("hostkey")
+    if not hostkey:
+        raise ValueError(f"No hostkey for room: {room_name}")
+    return hostkey
+6
+
+def get_room_suitability(room_name: str, vpis_room_meta: dict) -> str:
+    """Get first suitability ID for a room from vpis_room_meta."""
+    if room_name not in vpis_room_meta:
+        raise ValueError(f"Unknown room: {room_name}")
+    suitabilities = vpis_room_meta[room_name].get("suitabilities", [])
+    if not suitabilities:
+        raise ValueError(f"No suitabilities for room: {room_name}")
+    return suitabilities[0]["id"]
+
