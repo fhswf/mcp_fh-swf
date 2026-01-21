@@ -2,9 +2,9 @@ from datetime import datetime, timedelta
 import aiohttp
 import asyncio
 import xml.etree.ElementTree as ET
-import os
-import re
-from datetime import date
+
+LOCATION_PREFIXES = {"Is": "Is-", "Ha": "Ha-", "Me": "Me-", "So": "So-", "Ls": "Ls-"}
+
 # Funktion zum Abrufen einer Webseite
 async def fetch_page(session, url):
     async with session.get(url) as response:
@@ -16,6 +16,16 @@ async def scrape_all_pages(base_urls):
         tasks = [fetch_page(session, url) for url in base_urls]
         responses = await asyncio.gather(*tasks, return_exceptions=True)
         return responses
+
+# Funktion zum bestimmten des aktuellen Semesters
+def get_current_semester():
+    today = datetime.today()
+    month, year = today.month, today.year
+    if 3 <= month <= 8:
+        return f"SS{year}"
+    if month in [1, 2]:
+        year -= 1
+    return f"WS{year}"
 
 # Funktion zum Parsen der XML-Antwort
 def parse_xml_response(xml_content):
@@ -132,22 +142,12 @@ async def collect_vpis_data():
     next_14_days = [today + timedelta(days=i) for i in range(14)]
     formatted_dates = [date.strftime('%Y-%m-%d') for date in next_14_days]
     # Semester für URL bestimmen
-    month = today.month 
-    year = today.year
-
-    semester = ""
-    if 3 <= month <= 8:
-        semester = f"SS{year}"
-    else:
-        if month in [1, 2]:
-            year -= 1
-        semester = f"WS{year}"
+    semester = get_current_semester()
 
     # URLs für alle Standorte und die nächsten 14 Tage erstellen
     urls = []
-    for loc in LOCATION_PREFIXES:
-        prefix = LOCATION_PREFIXES[loc]
-        base_url = f'https://vpis.fh-swf.de/{semester}/raum.php3?Raum=&Standort={prefix}&Template=XML&Tag='
+    for loc in LOCATION_PREFIXES.keys():
+        base_url = f'https://vpis.fh-swf.de/{semester}/raum.php3?Raum=&Standort={loc}&Template=XML&Tag='
         urls.extend([base_url + date for date in formatted_dates])
 
     # Daten abrufen
@@ -182,9 +182,6 @@ async def collect_vpis_data():
     return vpis_name, vpis_room, vpis_employee, vpis_room_meta  
 
 
-ENCRYPTION_KEY = bytes.fromhex(os.environ.get("ENCRYPTION_KEY", ""))
-VPISAPP_URL = "https://vpis.fh-swf.de/vpisapp"
-
 EVENT_TYPE_MAP = {
     "bauarbeiten": "#SPLUS0D38C4",
     "buchen": "#SPLUS754A57",
@@ -212,61 +209,28 @@ EVENT_TYPE_MAP = {
 
 WEEKDAY_MAP = {0: "Mo", 1: "Di", 2: "Mi", 3: "Do", 4: "Fr", 5: "Sa", 6: "So"}
 
-LOCATION_PREFIXES = {"Is": "Is-", "Ha": "Ha-", "Me": "Me-", "So": "So-", "Ls": "Ls-"}
-
-async def get_current_semester() -> dict:
-    """Fetch current semester info from vpisapp XML."""
-    try:
-        async with aiohttp.ClientSession() as session:
-            async with session.get(VPISAPP_URL) as response:
-                if response.status != 200:
-                    raise ValueError(f"Failed to fetch vpisapp: status {response.status}")
-                xml_content = await response.text(encoding='iso-8859-1')
-    except aiohttp.ClientError as e:
-        raise ValueError(f"Network error fetching vpisapp: {e}")
-    
-    pattern = r'<locationsearch\s+href="([^"]+)"\s+begin="([^"]+)"\s+end="([^"]+)"\s+type="[^"]*">([^<]+)</locationsearch>'
-    matches = re.findall(pattern, xml_content)
-    
-    if not matches:
-        raise ValueError("No locationsearch entries found in vpisapp")
-    
-    today = date.today()
-    for href, begin_str, end_str, semester_name in matches:
-        begin_date = datetime.strptime(begin_str, "%Y-%m-%d").date()
-        end_date = datetime.strptime(end_str, "%Y-%m-%d").date()
-        if begin_date <= today <= end_date:
-            return {"semester": semester_name.strip(), "url": href}
-    
-    available = [f"{name} ({begin} to {end})" for _, begin, end, name in matches]
-    raise ValueError(f"No semester available for {today.isoformat()}. Available: {', '.join(available)}")
-
-
+# Funktion zum holen eines Wochentages
 def get_weekday_from_date(date_str: str) -> str:
-    """Convert DD.MM.YYYY to German weekday abbreviation."""
     return WEEKDAY_MAP[datetime.strptime(date_str, "%d.%m.%Y").weekday()]
 
-
+# Holt den Raum für einen Standort
 def get_location_from_room(room_name: str) -> str:
-    """Extract location prefix from room name."""
     for loc, prefix in LOCATION_PREFIXES.items():
         if room_name.startswith(prefix):
             return loc
     raise ValueError(f"Unknown location prefix in room: {room_name}")
 
-
+# Funktion zum holen des jeweiligen Keys der zu einem Raum gehört
 def get_room_hostkey(room_name: str, vpis_room_meta: dict) -> str:
-    """Get hostkey for a room from vpis_room_meta."""
     if room_name not in vpis_room_meta:
         raise ValueError(f"Unknown room: {room_name}")
     hostkey = vpis_room_meta[room_name].get("hostkey")
     if not hostkey:
         raise ValueError(f"No hostkey for room: {room_name}")
     return hostkey
-6
 
+# Raumsuchkriterium ist wichtig für Dinge wie Raumbuchung
 def get_room_suitability(room_name: str, vpis_room_meta: dict) -> str:
-    """Get first suitability ID for a room from vpis_room_meta."""
     if room_name not in vpis_room_meta:
         raise ValueError(f"Unknown room: {room_name}")
     suitabilities = vpis_room_meta[room_name].get("suitabilities", [])

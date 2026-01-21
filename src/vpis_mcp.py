@@ -1,13 +1,10 @@
 from typing import List, Dict
 from datetime import datetime, timedelta
-import base64
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
-import jwt
 import aiohttp
-from datetime import date
 import re
 from src.common.vpis import *
-from fastmcp.server.dependencies import get_http_headers
+from src.common.auth import get_user
 from . import mcp
 
 
@@ -25,7 +22,6 @@ async def check_and_update_vpis_data():
     if last_update is None or datetime.now() - last_update > CACHE_DURATION:
         vpis_name, vpis_room, vpis_employee, vpis_room_meta  = await collect_vpis_data()
         last_update = datetime.now()
-
 
 def format_information(modules: List[Dict[str, any]]) -> str:
     res = "-----------\n"
@@ -152,22 +148,6 @@ async def get_employee_activity_information(employee: str):
     
     return format_information(vpis_employee[employee])
 
-def decrypt_token(encrypted_payload: str) -> str:
-    """Decrypt AES-GCM encrypted token."""
-    parts = encrypted_payload.split(".")
-    if len(parts) != 3:
-        raise ValueError("Invalid token format")
-    
-    nonce = base64.b64decode(parts[0])
-    ciphertext = base64.b64decode(parts[1])
-    auth_tag = base64.b64decode(parts[2])
-    
-    return AESGCM(ENCRYPTION_KEY).decrypt(nonce, ciphertext + auth_tag, None).decode("utf-8")
-
-
-def decode_jwt_payload(jwt_token: str) -> dict:
-    """Decode JWT payload without signature verification."""
-    return jwt.decode(jwt_token, options={"verify_signature": False})
 
 def _extract_selected_option(html: str, field_name: str) -> str | None:
     """Extract selected option value from an HTML select field."""
@@ -184,8 +164,8 @@ def _extract_selected_option(html: str, field_name: str) -> str | None:
 
 async def get_booking_form_defaults(room: str, date: str, begin: str, end: str, hostkey: str, suitability: str) -> dict:
     """Get pre-selected department and scheduler for a room booking."""
-    semester_info = await get_current_semester()
-    url = f"https://vpis.fh-swf.de/{semester_info['semester']}/raumsuche.php3"
+    semester =  get_current_semester()
+    url = f"https://vpis.fh-swf.de/{semester}/raumsuche.php3"
     
     post_data = {
         "Auswahl": "Buchungsanfrageformular",
@@ -227,23 +207,16 @@ async def book_room(room: str, date: str, begin: str, end: str, event_name: str,
     """
     await check_and_update_vpis_data()
 
-    try:
-        semester_info = await get_current_semester()
-    except ValueError as e:
-        return str(e)
-
     event_type_lower = event_type.lower().strip()
     if event_type_lower not in EVENT_TYPE_MAP:
         return f"Invalid event_type '{event_type}'. Valid: {', '.join(EVENT_TYPE_MAP.keys())}"
 
-    # Auth
-    headers = get_http_headers(include_all=True)
-    token = headers.get("authorization", "").replace("Bearer ", "").strip()
-    try:
-        jwt_payload = decode_jwt_payload(decrypt_token(token))
-        name, email = jwt_payload.get("name"), jwt_payload.get("email")
-    except Exception:
-        return "Unauthorized: Invalid or missing authentication token."
+    user = get_user()
+    name = user.name  
+    email = user.email  
+    
+    if not name or not email:
+        return "Unauthorized: You have to have select in the settings to allow the MCP-server to get your name and email"
 
     # Room metadata
     try:
@@ -265,6 +238,9 @@ async def book_room(room: str, date: str, begin: str, end: str, event_name: str,
         return f"Failed to get booking form defaults: {e}"
 
     # Submit booking
+    semester = get_current_semester()
+    url = f"https://vpis.fh-swf.de/{semester}/raumsuche.php3"
+    
     post_data = {
         "Auswahl": "Buchungsanfrageformular",
         "Veranstaltung[LocationSuitability]": suitability,
@@ -286,28 +262,28 @@ async def book_room(room: str, date: str, begin: str, end: str, event_name: str,
         "submit": "absenden",
     }
 
-    url = f"https://vpis.fh-swf.de/{semester_info['semester']}/raumsuche.php3"
     try:
         async with aiohttp.ClientSession() as session:
             async with session.post(url, data=post_data) as response:
+                text = await response.text(encoding='iso-8859-1')
                 if response.status != 200:
-                    text = await response.text(encoding='iso-8859-1')
                     return f"Booking failed with status {response.status}: {text[:500]}"
                 
-                text = await response.text(encoding='iso-8859-1')
                 success = (
-                "Es wurde eine Raumbuchung " in text
-                and "Die/Der verantwortliche Planer/in" in text
-                and "wird die Veranstaltung freigeben (Schritt 3 von 3)." in text
+                    "Es wurde eine Raumbuchung " in text
+                    and "Die/Der verantwortliche Planer/in" in text
+                    and "wird die Veranstaltung freigeben (Schritt 3 von 3)." in text
                 )
 
                 if not success:
-                    result = "Error while booking a room!"
-                    return result
-                result = f"Raum '{room}' {'Buchungsanfrage gesendet'}!\n"
-                result += f"Datum: {date} ({weekday})\nZeit: {begin} - {end}\nVeranstaltung: {event_name}"
-                result += "\nBitte prüfen Sie die Bestätigung per E-Mail."
-                return result
+                    return "Error while booking a room!"
                 
+                return (
+                    f"Raum '{room}' Buchungsanfrage gesendet!\n"
+                    f"Datum: {date} ({weekday})\n"
+                    f"Zeit: {begin} - {end}\n"
+                    f"Veranstaltung: {event_name}\n"
+                    "Bitte prüfen Sie die Bestätigung per E-Mail."
+                )
     except aiohttp.ClientError as e:
         return f"Network error: {e}"
