@@ -20,21 +20,29 @@ spec:
           - containerPort: 8000
         volumeMounts:
           - mountPath: /app/data
-            name: data-volume 
+            name: data-volume
+          - mountPath: /etc/mcp/secrets
+            name: mcp-secret-volume
+            readOnly: true
         env:
+          # MCP Authentication (JWKS JSON format)
+          - name: MCP_KEY_FILE_PATH
+            value: "/etc/mcp/secrets/key.json"
+
+          # Bibliothek Configuration
           - name: BIBLIOTHEK_API_KEY
             valueFrom:
               secretKeyRef:
                 name: app-secrets
                 key: bibliothek_api_key
-                
+
           # Calendly Configuration
           - name: CALENDLY_API_KEY
             valueFrom:
               secretKeyRef:
                 name: app-secrets
                 key: calendly_api_key
-          
+
           # Neo4j Configuration
           - name: NEO4J_URI
             valueFrom:
@@ -54,8 +62,14 @@ spec:
       volumes:
       - name: data-volume
         persistentVolumeClaim:
-          claimName: data-pvc 
-
+          claimName: data-pvc
+      - name: mcp-secret-volume
+        secret:
+          secretName: mcp-server-keys
+          defaultMode: 0400
+          items:
+            - key: mcp_jwks
+              path: key.json
 ---
 apiVersion: v1
 kind: Service

@@ -1,13 +1,14 @@
-from typing import List, Dict
+from typing import  Annotated, List, Dict
 from datetime import datetime, timedelta
-from cryptography.hazmat.primitives.ciphers.aead import AESGCM
+from pydantic import Field
 import aiohttp
 import re
 from src.common.vpis import *
-from src.common.auth import get_user
+from mcp_auth_middleware import get_user
+from fastmcp.utilities.logging import get_logger
 from . import mcp
 
-
+logger = get_logger(__name__)
 vpis_name = {}
 vpis_room = {}
 vpis_employee = {}
@@ -137,10 +138,6 @@ async def get_all_free_rooms(location: str, date: str, begin: str, end: str, bui
 
 @mcp.tool()
 async def get_employee_activity_information(employee: str):
-    """Get Information about the activities of a employee
-    Args:
-        employee: employee name
-    """
     await check_and_update_vpis_data()
     employees = list(vpis_employee.keys())
     if employee not in employees:
@@ -148,23 +145,32 @@ async def get_employee_activity_information(employee: str):
     
     return format_information(vpis_employee[employee])
 
-
-def _extract_selected_option(html: str, field_name: str) -> str | None:
-    """Extract selected option value from an HTML select field."""
-    pattern = rf'<select[^>]*name="{re.escape(field_name)}"[^>]*>(.*?)</select>'
-    select_match = re.search(pattern, html, re.DOTALL | re.IGNORECASE)
-    if not select_match:
-        return None
+# holt die Daten von Planer und zugehörigen Fachbereich der Buchung vom VPIS
+def extract_form_defaults(html: str) -> dict[str, str | None]:
+    logger.debug("Extracting form defaults from HTML")
+    defaults = {}
     
-    for opt in re.finditer(r'<option([^>]*)value="([^"]+)"([^>]*)>', select_match.group(1), re.IGNORECASE):
-        if 'selected' in opt.group(1).lower() or 'selected' in opt.group(3).lower():
-            return opt.group(2)
-    return None
+    patterns = {
+        "department": r'name="Veranstaltung\[Department\]"[^>]*>.*?<option[^>]*value="([^"]+)"[^>]*selected',
+        "scheduler": r'name="scheduler"[^>]*>.*?<option[^>]*value="([^"]+)"[^>]*selected',
+    }
+    
+    for key, pattern in patterns.items():
+        match = re.search(pattern, html, re.DOTALL | re.IGNORECASE)
+        if match:
+            defaults[key] = match.group(1)
+            logger.debug(f"Found {key}: {defaults[key]}")
+        else:
+            defaults[key] = None
+            logger.debug(f"No selected option found for {key}")
+    
+    return defaults
 
-
+# stellt die Anfrage um den zuständigen Planer und Fachbereich zu ermitteln
 async def get_booking_form_defaults(room: str, date: str, begin: str, end: str, hostkey: str, suitability: str) -> dict:
-    """Get pre-selected department and scheduler for a room booking."""
-    semester =  get_current_semester()
+    logger.debug(f"Getting booking form defaults for room {room}, date {date}, time {begin}-{end}") 
+    
+    semester = get_current_semester()
     url = f"https://vpis.fh-swf.de/{semester}/raumsuche.php3"
     
     post_data = {
@@ -178,66 +184,90 @@ async def get_booking_form_defaults(room: str, date: str, begin: str, end: str, 
         "Raum[]": hostkey,
     }
 
-    async with aiohttp.ClientSession() as session:
-        async with session.post(url, data=post_data) as response:
-            if response.status != 200:
-                raise ValueError(f"Failed to get booking form: status {response.status}")
-            html = await response.text(encoding='iso-8859-1')
+    logger.debug(f"Posting to {url} to get form defaults")  
     
-    return {
-        "department": _extract_selected_option(html, "Veranstaltung[Department]"),
-        "scheduler": _extract_selected_option(html, "scheduler"),
-    }
+    try:
+        async with aiohttp.ClientSession() as session:
+            async with session.post(url, data=post_data) as response:
+                if response.status != 200:
+                    logger.error(f"Failed to get booking form: HTTP {response.status}")  
+                    raise ValueError(f"Failed to get booking form: status {response.status}")
+                html = await response.text(encoding='iso-8859-1')
+    except aiohttp.ClientError as e:
+        logger.error(f"Network error getting booking form defaults: {e}")  
+        raise
+    
+    defaults = extract_form_defaults(html)
+    
+    logger.debug(f"Booking form defaults: department={defaults['department']}, scheduler={defaults['scheduler']}")  
+    return defaults
 
-
+# Tool zum Aufruf einer Raumbuchung
 @mcp.tool()
-async def book_room(room: str, date: str, begin: str, end: str, event_name: str, event_type: str) -> str:
-    """Book a room for a specific location.
-
-    Args:
-        room: Room name (e.g., 'Is-A006', 'Ha-H102').
-        date: Date in DD.MM.YYYY format.
-        begin: Start time in HH:MM format.
-        end: End time in HH:MM format.
-        event_name: Name of the event.
-        event_type: Event type key (bauarbeiten, buchen, coaching, etc.).
-
-    Returns:
-        Confirmation message or error description.
-    """
+async def book_room(
+    room: str,
+    date: Annotated[
+        str,
+        Field(description="Date in DD.MM.YYYY format (e.g., 02.02.2026)")
+    ],
+    begin: Annotated[
+        str,
+        Field(description="Start time in HH:MM format (e.g., 09:00)")
+    ],
+    end: Annotated[
+        str,
+        Field(description="End time in HH:MM format (e.g., 10:30)")
+    ],
+    event_name: str,
+    event_type: Annotated[
+        str,
+        Field(
+            description=f"Type of event. Must be one of: {', '.join(VALID_EVENT_TYPES)}",
+            json_schema_extra={"enum": VALID_EVENT_TYPES}
+        )
+    ]
+) -> str:
+    """Book a room at FH SWF."""
+    logger.info(f"Room booking request: room={room}, date={date}, time={begin}-{end}, event='{event_name}', type={event_type}")  
+    
     await check_and_update_vpis_data()
 
     event_type_lower = event_type.lower().strip()
     if event_type_lower not in EVENT_TYPE_MAP:
+        logger.warning(f"Invalid event type: '{event_type}'")  
         return f"Invalid event_type '{event_type}'. Valid: {', '.join(EVENT_TYPE_MAP.keys())}"
 
     user = get_user()
-    name = user.name  
-    email = user.email  
+    name = user.name
+    email = user.email
     
     if not name or not email:
+        logger.warning("Booking attempted without user credentials") 
         return "Unauthorized: You have to have select in the settings to allow the MCP-server to get your name and email"
 
-    # Room metadata
     try:
         location = get_location_from_room(room)
         hostkey = get_room_hostkey(room, vpis_room_meta)
         suitability = get_room_suitability(room, vpis_room_meta)
         weekday = get_weekday_from_date(date)
+        logger.debug(f"Room metadata: location={location}, hostkey={hostkey}, suitability={suitability}, weekday={weekday}")  
     except ValueError as e:
+        logger.error(f"Room metadata error: {e}") 
         return str(e)
 
-    # Form defaults
     try:
         defaults = await get_booking_form_defaults(room, date, begin, end, hostkey, suitability)
         if not defaults.get("department"):
+            logger.error(f"Could not determine department for room {room}") 
             return f"Could not determine department for room {room}."
         if not defaults.get("scheduler"):
+            logger.error(f"Could not determine scheduler for room {room}") 
             return f"Could not determine scheduler for room {room}."
     except Exception as e:
+        logger.error(f"Failed to get booking form defaults: {e}")  
         return f"Failed to get booking form defaults: {e}"
 
-    # Submit booking
+    # führt eine Buchung aus 
     semester = get_current_semester()
     url = f"https://vpis.fh-swf.de/{semester}/raumsuche.php3"
     
@@ -262,11 +292,15 @@ async def book_room(room: str, date: str, begin: str, end: str, event_name: str,
         "submit": "absenden",
     }
 
+    logger.debug(f"Submitting booking request to {url}") 
+
+   # überprüft ob eine Raumbuchung stattgefunden hat
     try:
         async with aiohttp.ClientSession() as session:
             async with session.post(url, data=post_data) as response:
                 text = await response.text(encoding='iso-8859-1')
                 if response.status != 200:
+                    logger.error(f"Booking request failed: HTTP {response.status}")  
                     return f"Booking failed with status {response.status}: {text[:500]}"
                 
                 success = (
@@ -276,8 +310,11 @@ async def book_room(room: str, date: str, begin: str, end: str, event_name: str,
                 )
 
                 if not success:
+                    logger.error(f"Booking response did not contain success markers")  
+                    logger.debug(f"Response preview: {text[:500]}") 
                     return "Error while booking a room!"
                 
+                logger.info(f"Room booking successful: {room} on {date} ({weekday}), {begin}-{end}")  
                 return (
                     f"Raum '{room}' Buchungsanfrage gesendet!\n"
                     f"Datum: {date} ({weekday})\n"
@@ -286,4 +323,5 @@ async def book_room(room: str, date: str, begin: str, end: str, event_name: str,
                     "Bitte prüfen Sie die Bestätigung per E-Mail."
                 )
     except aiohttp.ClientError as e:
+        logger.error(f"Network error during booking submission: {e}")  
         return f"Network error: {e}"

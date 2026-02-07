@@ -2,11 +2,12 @@ from fastmcp import FastMCP
 import os
 import asyncio
 from dotenv import load_dotenv
+import uvicorn
 load_dotenv()
 
 from src.common.Neo4jHandler import Neo4jHandler
 
-from src import mcp, neo_handler
+from src import app, neo_handler
 
 import src.mensa
 _ = src.mensa
@@ -30,6 +31,6 @@ port = int(os.getenv("PORT", "8000"))
 
 if __name__ == "__main__":
     try:
-        mcp.run(transport="http", host="0.0.0.0", port=port, stateless_http=True )
+        uvicorn.run(app,host="0.0.0.0", port=8000)
     finally:
         neo_handler.close() 

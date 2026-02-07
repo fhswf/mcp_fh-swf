@@ -526,6 +526,18 @@ wheels = [
 ]
 
 [[package]]
+name = "ecdsa"
+version = "0.19.1"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "six" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/c0/1f/924e3caae75f471eae4b26bd13b698f6af2c44279f67af317439c2f4c46a/ecdsa-0.19.1.tar.gz", hash = "sha256:478cba7b62555866fcb3bb3fe985e06decbdb68ef55713c4e5ab98c57d508e61", size = 201793, upload-time = "2025-03-13T11:52:43.25Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/cb/a3/460c57f094a4a165c84a1341c373b0a4f5ec6ac244b998d5021aade89b77/ecdsa-0.19.1-py2.py3-none-any.whl", hash = "sha256:30638e27cf77b7e15c4c4cc1973720149e1033827cfd00661ca5c8cc0cdb24c3", size = 150607, upload-time = "2025-03-13T11:52:41.757Z" },
+]
+
+[[package]]
 name = "email-validator"
 version = "2.3.0"
 source = { registry = "https://pypi.org/simple" }
@@ -579,6 +591,7 @@ dependencies = [
     { name = "chromadb" },
     { name = "demjson3" },
     { name = "fastmcp" },
+    { name = "mcp-auth-middleware" },
     { name = "neo4j" },
     { name = "pandas" },
     { name = "python-dotenv" },
@@ -593,6 +606,7 @@ requires-dist = [
     { name = "chromadb", specifier = ">=1.3.4" },
     { name = "demjson3", specifier = ">=3.0.6" },
     { name = "fastmcp", specifier = ">=2.12.5" },
+    { name = "mcp-auth-middleware", specifier = ">=0.1.1" },
     { name = "neo4j", specifier = ">=6.0.2" },
     { name = "pandas", specifier = ">=2.3.3" },
     { name = "python-dotenv", specifier = ">=1.1.1" },
@@ -960,6 +974,19 @@ wheels = [
 ]
 
 [[package]]
+name = "jwcrypto"
+version = "1.5.6"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "cryptography" },
+    { name = "typing-extensions" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/e1/db/870e5d5fb311b0bcf049630b5ba3abca2d339fd5e13ba175b4c13b456d08/jwcrypto-1.5.6.tar.gz", hash = "sha256:771a87762a0c081ae6166958a954f80848820b2ab066937dc8b8379d65b1b039", size = 87168, upload-time = "2024-03-06T19:58:31.831Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/cd/58/4a1880ea64032185e9ae9f63940c9327c6952d5584ea544a8f66972f2fda/jwcrypto-1.5.6-py3-none-any.whl", hash = "sha256:150d2b0ebbdb8f40b77f543fb44ffd2baeff48788be71f67f03566692fd55789", size = 92520, upload-time = "2024-03-06T19:58:29.765Z" },
+]
+
+[[package]]
 name = "kubernetes"
 version = "35.0.0"
 source = { registry = "https://pypi.org/simple" }
@@ -1089,6 +1116,20 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/3d/a1/b1f328da3b153683d2ec34f849b4b6eac2790fb240e3aef06ff2fab3df9d/mcp-1.16.0.tar.gz", hash = "sha256:39b8ca25460c578ee2cdad33feeea122694cfdf73eef58bee76c42f6ef0589df", size = 472918, upload-time = "2025-10-02T16:58:20.631Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/c9/0e/7cebc88e17daf94ebe28c95633af595ccb2864dc2ee7abd75542d98495cc/mcp-1.16.0-py3-none-any.whl", hash = "sha256:ec917be9a5d31b09ba331e1768aa576e0af45470d657a0319996a20a57d7d633", size = 167266, upload-time = "2025-10-02T16:58:19.039Z" },
+]
+
+[[package]]
+name = "mcp-auth-middleware"
+version = "0.1.1"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "jwcrypto" },
+    { name = "python-jose", extra = ["cryptography"] },
+    { name = "starlette" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/68/fc/69f385ca06706f34f706a75489d2bed0443d4afac437d143b1dae917c200/mcp_auth_middleware-0.1.1.tar.gz", hash = "sha256:68a57b16d79a1ff3b176ceb0c57229d4e94913c9c23044616ac885561adda24e", size = 8629, upload-time = "2026-02-05T23:12:06.946Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/08/1d/a651dfc2ab1a007376af5448ae25c527a32f3f1a4fdd276095990f8ca69a/mcp_auth_middleware-0.1.1-py3-none-any.whl", hash = "sha256:bace64181daea1d32a00eea2fd307be405eee3605091d7f5955c8b133f5e38df", size = 9455, upload-time = "2026-02-05T23:12:05.246Z" },
 ]
 
 [[package]]
@@ -2164,6 +2205,25 @@ wheels = [
 ]
 
 [[package]]
+name = "python-jose"
+version = "3.5.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "ecdsa" },
+    { name = "pyasn1" },
+    { name = "rsa" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/c6/77/3a1c9039db7124eb039772b935f2244fbb73fc8ee65b9acf2375da1c07bf/python_jose-3.5.0.tar.gz", hash = "sha256:fb4eaa44dbeb1c26dcc69e4bd7ec54a1cb8dd64d3b4d81ef08d90ff453f2b01b", size = 92726, upload-time = "2025-05-28T17:31:54.288Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/d9/c3/0bd11992072e6a1c513b16500a5d07f91a24017c5909b02c72c62d7ad024/python_jose-3.5.0-py2.py3-none-any.whl", hash = "sha256:abd1202f23d34dfad2c3d28cb8617b90acf34132c7afd60abd0b0b7d3cb55771", size = 34624, upload-time = "2025-05-28T17:31:52.802Z" },
+]
+
+[package.optional-dependencies]
+cryptography = [
+    { name = "cryptography" },
+]
+
+[[package]]
 name = "python-multipart"
 version = "0.0.22"
 source = { registry = "https://pypi.org/simple" }
@@ -2619,14 +2679,14 @@ wheels = [
 
 [[package]]
 name = "starlette"
-version = "0.48.0"
+version = "0.52.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "anyio" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/a7/a5/d6f429d43394057b67a6b5bbe6eae2f77a6bf7459d961fdb224bf206eee6/starlette-0.48.0.tar.gz", hash = "sha256:7e8cee469a8ab2352911528110ce9088fdc6a37d9876926e73da7ce4aa4c7a46", size = 2652949, upload-time = "2025-09-13T08:41:05.699Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/c4/68/79977123bb7be889ad680d79a40f339082c1978b5cfcf62c2d8d196873ac/starlette-0.52.1.tar.gz", hash = "sha256:834edd1b0a23167694292e94f597773bc3f89f362be6effee198165a35d62933", size = 2653702, upload-time = "2026-01-18T13:34:11.062Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/be/72/2db2f49247d0a18b4f1bb9a5a39a0162869acf235f3a96418363947b3d46/starlette-0.48.0-py3-none-any.whl", hash = "sha256:0764ca97b097582558ecb498132ed0c7d942f233f365b86ba37770e026510659", size = 73736, upload-time = "2025-09-13T08:41:03.869Z" },
+    { url = "https://files.pythonhosted.org/packages/81/0d/13d1d239a25cbfb19e740db83143e95c772a1fe10202dda4b76792b114dd/starlette-0.52.1-py3-none-any.whl", hash = "sha256:0029d43eb3d273bc4f83a08720b4912ea4b071087a3b48db01b7c839f7954d74", size = 74272, upload-time = "2026-01-18T13:34:09.188Z" },
 ]
 
 [[package]]
