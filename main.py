@@ -1,12 +1,7 @@
-from fastmcp import FastMCP
-import os
 import asyncio
 from dotenv import load_dotenv
 import uvicorn
 load_dotenv()
-
-from src.common.Neo4jHandler import Neo4jHandler
-
 from src import app, neo_handler
 
 import src.mensa

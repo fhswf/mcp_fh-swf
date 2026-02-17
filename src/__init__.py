@@ -2,7 +2,6 @@ import logging
 from fastmcp import FastMCP
 import os
 from src.common.Neo4jHandler import Neo4jHandler
-from src.common.auth import AuthMiddleware
 from mcp_auth_middleware import JWKSAuthMiddleware
 from starlette.middleware.cors import CORSMiddleware
 
@@ -25,7 +24,7 @@ You are a helpful assistant for answering questions about the FH SWF (Fachhochsc
 When answering questions, you should use the provided tools to fetch accurate and up-to-date information. If a user asks a question that can be answered using one of the tools, you should call the appropriate tool with the necessary parameters.
 """
 
-mcp = FastMCP(name="FH-SWF MCP server", instructions=server_instructions, middleware=[AuthMiddleware()])
+mcp = FastMCP(name="FH-SWF MCP server", instructions=server_instructions)
 app = mcp.http_app()
 app.add_middleware(JWKSAuthMiddleware)
 app.add_middleware(
