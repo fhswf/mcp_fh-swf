@@ -1,6 +1,7 @@
 import asyncio
 from dotenv import load_dotenv
 import uvicorn
+import os
 load_dotenv()
 from src import app, neo_handler
 
