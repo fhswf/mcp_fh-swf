@@ -1,7 +1,26 @@
 # CHANGELOG
 
 
+## v0.3.0 (2026-02-18)
+
+### Features
+
+- Integrate external Appointme MCP service via Proxy, removed calendly tools
+  ([`8248ba4`](https://github.com/fhswf/mcp_fh-swf/commit/8248ba423b20315db3336cf4f8f80ef730f0a226))
+
+- Integrate external Appointme MCP service via Proxy, removed calendly tools
+  ([`2e20d9f`](https://github.com/fhswf/mcp_fh-swf/commit/2e20d9f22722e5ca4ba44c690084aabc36eb348d))
+
+- Integrate external Appointme MCP service via Proxy, removed calendly tools
+  ([`4c71824`](https://github.com/fhswf/mcp_fh-swf/commit/4c718241bb0341cad45d19abb5b27f6d6bf23eed))
+
+
 ## v0.2.2 (2025-11-21)
+
+### Chores
+
+- Add secret for bibliothek search
+  ([`83649cf`](https://github.com/fhswf/mcp_fh-swf/commit/83649cf43f808980ec6955a92b77e4493313581c))
 
 
 ## v0.2.1 (2025-11-21)
