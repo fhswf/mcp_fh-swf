@@ -1,6 +1,14 @@
 # CHANGELOG
 
 
+## v0.3.1 (2026-02-18)
+
+### Bug Fixes
+
+- Use old 2.14 syntax for proxy
+  ([`e10ce2c`](https://github.com/fhswf/mcp_fh-swf/commit/e10ce2c39670ac1c0e449cb2aa80e19c6bbd68e8))
+
+
 ## v0.3.0 (2026-02-18)
 
 ### Features
