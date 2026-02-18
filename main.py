@@ -10,8 +10,6 @@ from src import mcp, neo_handler
 
 import src.mensa
 _ = src.mensa
-import src.calendly_mcp
-_ = src.calendly_mcp
 import src.vpis_mcp
 _ = src.vpis_mcp
 import src.graphdata_mcp
@@ -24,7 +22,8 @@ import src.news_events_mcp
 _ = src.news_events_mcp
 import src.portale_mcp
 asyncio.run(src.portale_mcp.init())
-
+import src.appointme_mcp
+asyncio.run(src.appointme_mcp.init())
 
 if __name__ == "__main__":
     try:
