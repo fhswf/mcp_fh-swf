@@ -9,7 +9,7 @@ async def init():
     try:
         # Create the proxy for the external server
         #external_service = create_proxy("https://appointme.fh-swf.cloud")
-        external_service = FastMCP.as_proxy("https://appointme.fh-swf.cloud")
+        external_service = FastMCP.as_proxy("https://appointme.fh-swf.cloud/mcp")
 
         # Mount the tools to the central mcp instance
         mcp.mount(external_service)
