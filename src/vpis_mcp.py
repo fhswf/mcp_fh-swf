@@ -3,7 +3,7 @@ from datetime import datetime, timedelta
 from pydantic import Field
 import aiohttp
 import re
-from src.common.vpis import *
+import src.common.vpis as vpis
 from mcp_auth_middleware import get_user
 from fastmcp.utilities.logging import get_logger
 from . import mcp
@@ -21,7 +21,7 @@ async def check_and_update_vpis_data():
     global vpis_name, vpis_room, vpis_employee, vpis_room_meta, last_update
 
     if last_update is None or datetime.now() - last_update > CACHE_DURATION:
-        vpis_name, vpis_room, vpis_employee, vpis_room_meta  = await collect_vpis_data()
+        vpis_name, vpis_room, vpis_employee, vpis_room_meta  = await vpis.collect_vpis_data()
         last_update = datetime.now()
 
 def format_information(modules: List[Dict[str, any]]) -> str:
@@ -170,12 +170,12 @@ def extract_form_defaults(html: str) -> dict[str, str | None]:
 async def get_booking_form_defaults(room: str, date: str, begin: str, end: str, hostkey: str, suitability: str) -> dict:
     logger.debug(f"Getting booking form defaults for room {room}, date {date}, time {begin}-{end}") 
     
-    semester = get_current_semester()
+    semester = vpis.get_current_semester()
     url = f"https://vpis.fh-swf.de/{semester}/raumsuche.php3"
     
     post_data = {
         "Auswahl": "Buchungsanfrageformular",
-        "Standort": get_location_from_room(room),
+        "Standort": vpis.get_location_from_room(room),
         "LocationSuitability": suitability,
         "Template": "2021",
         "SucheDatum": date,
@@ -222,8 +222,8 @@ async def book_room(
     event_type: Annotated[
         str,
         Field(
-            description=f"Type of event. Must be one of: {', '.join(VALID_EVENT_TYPES)}",
-            json_schema_extra={"enum": VALID_EVENT_TYPES}
+            description=f"Type of event. Must be one of: {', '.join(vpis.VALID_EVENT_TYPES)}",
+            json_schema_extra={"enum": vpis.VALID_EVENT_TYPES}
         )
     ]
 ) -> str:
@@ -233,9 +233,9 @@ async def book_room(
     await check_and_update_vpis_data()
 
     event_type_lower = event_type.lower().strip()
-    if event_type_lower not in EVENT_TYPE_MAP:
+    if event_type_lower not in vpis.EVENT_TYPE_MAP:
         logger.warning(f"Invalid event type: '{event_type}'")  
-        return f"Invalid event_type '{event_type}'. Valid: {', '.join(EVENT_TYPE_MAP.keys())}"
+        return f"Invalid event_type '{event_type}'. Valid: {', '.join(vpis.EVENT_TYPE_MAP.keys())}"
 
     user = get_user()
     name = user.name
@@ -246,10 +246,10 @@ async def book_room(
         return "Unauthorized: You have to have select in the settings to allow the MCP-server to get your name and email"
 
     try:
-        location = get_location_from_room(room)
-        hostkey = get_room_hostkey(room, vpis_room_meta)
-        suitability = get_room_suitability(room, vpis_room_meta)
-        weekday = get_weekday_from_date(date)
+        location = vpis.get_location_from_room(room)
+        hostkey = vpis.get_room_hostkey(room, vpis_room_meta)
+        suitability = vpis.get_room_suitability(room, vpis_room_meta)
+        weekday = vpis.get_weekday_from_date(date)
         logger.debug(f"Room metadata: location={location}, hostkey={hostkey}, suitability={suitability}, weekday={weekday}")  
     except ValueError as e:
         logger.error(f"Room metadata error: {e}") 
@@ -268,7 +268,7 @@ async def book_room(
         return f"Failed to get booking form defaults: {e}"
 
     # führt eine Buchung aus 
-    semester = get_current_semester()
+    semester = vpis.get_current_semester()
     url = f"https://vpis.fh-swf.de/{semester}/raumsuche.php3"
     
     post_data = {
@@ -283,7 +283,7 @@ async def book_room(
         "Raum[]": hostkey,
         "Veranstaltung[Department]": defaults["department"],
         "Veranstaltung[Name]": event_name,
-        "Veranstaltung[Art]": EVENT_TYPE_MAP[event_type_lower],
+        "Veranstaltung[Art]": vpis.EVENT_TYPE_MAP[event_type_lower],
         "Nutzer[Name]": name,
         "Nutzer[eMail]": email,
         "Nutzung": "",
