@@ -15,4 +15,4 @@ k8s/secret.yaml
 src/llm_graph/*
 *-secret.yaml
 .env
-
+.keys/

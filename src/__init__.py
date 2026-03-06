@@ -2,6 +2,8 @@ import logging
 from fastmcp import FastMCP
 import os
 from src.common.Neo4jHandler import Neo4jHandler
+from mcp_auth_middleware import JWKSAuthMiddleware
+from starlette.middleware.cors import CORSMiddleware
 
 
 logging.basicConfig(level=logging.INFO)
@@ -23,3 +25,9 @@ When answering questions, you should use the provided tools to fetch accurate an
 """
 
 mcp = FastMCP(name="FH-SWF MCP server", instructions=server_instructions)
+app = mcp.http_app()
+app.add_middleware(JWKSAuthMiddleware)
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+)

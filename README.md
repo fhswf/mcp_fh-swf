@@ -30,6 +30,8 @@ NEO4J_USERNAME=neo4j
 NEO4J_PASSWORD=your_password
 CALENDLY_API_TOKEN=your_token  # optional für die Verwendung von Calendly
 BIBLIOTHEK_API_KEY=your_token  # optional für die Suche in der Bibliothek
+FASTMCP_LOG_LEVEL=INFO  # optional: DEBUG, INFO, WARNING, ERROR, CRITICAL (Standard: INFO)
+MCP_KEY_FILE_PATH=.keys/mcp-private.json  # Pfad zur JWE Private Key Datei (Kubernetes)
 ```
 
 ### Server starten
@@ -119,5 +121,43 @@ ProjektKI/
 - `data_preprocessing/scripts/TableExtraction.ipynb` - Notebook zur Extraktion von Modulinformationen aus den vorverarbeiteten Modulhandbüchern
 - `data_preprocessing/scripts/docling_pruefungsordnungen.ipynb` - Notebook zur Umwandlung der Prüfungsordnungen in Markdown-Dateien
 
----
+## Authentifizierung (mcp-auth-middleware)
 
+Der MCP-Server verwendet [mcp-auth-middleware](https://pypi.org/project/mcp-auth-middleware/) für die JWE-Token-Authentifizierung. Damit können Benutzerinformationen (Claims) end-to-end verschlüsselt vom Client an den Server übertragen und in Tools über `get_user()` abgerufen werden.
+
+### Lokale Entwicklung
+
+#### 1. RSA-Schlüsselpaar generieren
+
+```bash
+mcp-auth-middleware generate
+```
+
+Ausgabe:
+```
+Keys generated (JWKS format):
+  Private: .keys/mcp-private.json
+  Public:  .keys/mcp-public.json
+```
+
+> **Wichtig:** `.keys/` sofort in `.gitignore` eintragen.
+
+#### 2. `.env` Datei erweitern
+
+```env
+MCP_KEY_FILE_PATH=.keys/mcp-private.json
+```
+
+### Kubernetes Deployment
+
+#### 1. Schlüssel generieren und als Secret anlegen
+
+```bash
+mcp-server-keys | kubectl apply -f -
+```
+
+Danach lokale Schlüssel sicher löschen:
+
+```bash
+mcp-auth-middleware clean
+```
