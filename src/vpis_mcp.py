@@ -6,6 +6,7 @@ import re
 import src.common.vpis as vpis
 from mcp_auth_middleware import get_user
 from fastmcp.utilities.logging import get_logger
+from urllib.parse import urlencode
 from . import mcp
 
 logger = get_logger(__name__)
@@ -146,7 +147,7 @@ async def get_employee_activity_information(employee: str):
     return format_information(vpis_employee[employee])
 
 # holt die Daten von Planer und zugehörigen Fachbereich der Buchung vom VPIS
-def extract_form_defaults(html: str) -> dict[str, str | None]:
+def extract_form_defaults(html: str) -> dict:
     logger.debug("Extracting form defaults from HTML")
     defaults = {}
     
@@ -164,6 +165,23 @@ def extract_form_defaults(html: str) -> dict[str, str | None]:
             defaults[key] = None
             logger.debug(f"No selected option found for {key}")
     
+    event_types = {}
+    art_block = re.search(
+        r'name="Veranstaltung\[Art\]"[^>]*>(.*?)</select>',
+        html, re.DOTALL | re.IGNORECASE
+    )
+    if art_block:
+        for match in re.finditer(
+            r'<option\s+value="([^"]+)"\s*>(.*?)</option>',
+            art_block.group(1), re.DOTALL
+        ):
+            code = match.group(1)
+            label = match.group(2).strip().lower()
+            if code:  
+                event_types[label] = code
+        logger.debug(f"Found {len(event_types)} event types")
+    
+    defaults["event_types"] = event_types
     return defaults
 
 # stellt die Anfrage um den zuständigen Planer und Fachbereich zu ermitteln
@@ -208,7 +226,7 @@ async def book_room(
     room: str,
     date: Annotated[
         str,
-        Field(description="Date in DD.MM.YYYY format (e.g., 02.02.2026)")
+        Field(description="Date in YYYY-MM-DD format (e.g., 2026-03-07)")
     ],
     begin: Annotated[
         str,
@@ -233,13 +251,18 @@ async def book_room(
     await check_and_update_vpis_data()
 
     event_type_lower = event_type.lower().strip()
-    if event_type_lower not in vpis.EVENT_TYPE_MAP:
-        logger.warning(f"Invalid event type: '{event_type}'")  
-        return f"Invalid event_type '{event_type}'. Valid: {', '.join(vpis.EVENT_TYPE_MAP.keys())}"
+
+    # ISO-Format (YYYY-MM-DD) -> VPIS-Format (DD.MM.YYYY)
+    try:
+        date_obj = datetime.strptime(date, "%Y-%m-%d")
+        date_vpis = date_obj.strftime("%d.%m.%Y")
+    except ValueError:
+        return f"Invalid date format '{date}'. Expected YYYY-MM-DD (e.g., 2026-03-07)"
 
     user = get_user()
     name = user.name
     email = user.email
+    print(f"User info: name={name}, email={email}")
     
     if not name or not email:
         logger.warning("Booking attempted without user credentials") 
@@ -249,14 +272,14 @@ async def book_room(
         location = vpis.get_location_from_room(room)
         hostkey = vpis.get_room_hostkey(room, vpis_room_meta)
         suitability = vpis.get_room_suitability(room, vpis_room_meta)
-        weekday = vpis.get_weekday_from_date(date)
+        weekday = vpis.get_weekday_from_date(date_vpis)
         logger.debug(f"Room metadata: location={location}, hostkey={hostkey}, suitability={suitability}, weekday={weekday}")  
     except ValueError as e:
         logger.error(f"Room metadata error: {e}") 
         return str(e)
 
     try:
-        defaults = await get_booking_form_defaults(room, date, begin, end, hostkey, suitability)
+        defaults = await get_booking_form_defaults(room, date_vpis, begin, end, hostkey, suitability)
         if not defaults.get("department"):
             logger.error(f"Could not determine department for room {room}") 
             return f"Could not determine department for room {room}."
@@ -266,6 +289,12 @@ async def book_room(
     except Exception as e:
         logger.error(f"Failed to get booking form defaults: {e}")  
         return f"Failed to get booking form defaults: {e}"
+
+    event_type_code = defaults["event_types"].get(event_type_lower)
+    if not event_type_code:
+        available = ", ".join(defaults["event_types"].keys())
+        logger.warning(f"Event type '{event_type_lower}' not found in form. Available: {available}")
+        return f"Event type '{event_type}' not available. Available types: {available}"
 
     # führt eine Buchung aus 
     semester = vpis.get_current_semester()
@@ -277,13 +306,13 @@ async def book_room(
         "Template": "2021",
         "Standort": location,
         "Wochentag": weekday,
-        "SucheDatum": date,
+        "SucheDatum": date_vpis,
         "SucheStart": begin,
         "SucheEnde": end,
         "Raum[]": hostkey,
         "Veranstaltung[Department]": defaults["department"],
         "Veranstaltung[Name]": event_name,
-        "Veranstaltung[Art]": vpis.EVENT_TYPE_MAP[event_type_lower],
+        "Veranstaltung[Art]": event_type_code,
         "Nutzer[Name]": name,
         "Nutzer[eMail]": email,
         "Nutzung": "",
@@ -293,6 +322,7 @@ async def book_room(
     }
 
     logger.debug(f"Submitting booking request to {url}") 
+    logger.debug(f"URL-encoded payload: {urlencode(post_data)}")
 
    # überprüft ob eine Raumbuchung stattgefunden hat
     try:

@@ -228,32 +228,13 @@ async def collect_vpis_data():
 
 
 # übersetzt den eingegeben Event Typ in eine  vom Buchungsystem verarbeitbares Format
-EVENT_TYPE_MAP = {
-    "bauarbeiten": "#SPLUS0D38C4",
-    "buchen": "#SPLUS754A57",
-    "coaching": "#SPLUS5AC30E",
-    "exkursion": "#SPLUSD3D0E9",
-    "info": "#SPLUS7FEFE3",
-    "klausur": "#SPLUS1AF112",
-    "klausur_online": "#SPLUS1B6B84",
-    "kolloquium": "#SPLUSF3A37E",
-    "kompaktseminar": "#SPLUSD20DA7",
-    "lerngruppe": "#SPLUS59501F",
-    "servicearbeiten": "#SPLUS8DDC33",
-    "sitzung": "#SPLUS24D328",
-    "sitzung_online": "#SPLUS4E4766",
-    "sprechstunde": "#SPLUSFBCF5E",
-    "tagesseminar": "#SPLUSD68CBF",
-    "tagung": "#SPLUS68EECD",
-    "training": "#SPLUS6D0378",
-    "tutorium": "#SPLUSFBCE67",
-    "tutorium_online": "#SPLUSB7BA6F",
-    "vortrag": "#SPLUSD68CC1",
-    "workshop": "#SPLUSD68CC0",
-    "elearning": "#SPLUS2FBB8E",
-}
-
-VALID_EVENT_TYPES = list(EVENT_TYPE_MAP.keys())
+VALID_EVENT_TYPES = [
+    "bauarbeiten", "buchen", "coaching", "elearning", "exkursion",
+    "info", "klausur", "klausur_online", "kolloquium", "kompaktseminar",
+    "lerngruppe", "servicearbeiten", "sitzung", "sitzung_online",
+    "sprechstunde", "tagesseminar", "tagung", "training", "tutorium",
+    "tutorium_online", "vortrag", "workshop",
+]
 
 WEEKDAY_MAP = {0: "Mo", 1: "Di", 2: "Mi", 3: "Do", 4: "Fr", 5: "Sa", 6: "So"}
 

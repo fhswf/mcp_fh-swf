@@ -32,6 +32,7 @@ CALENDLY_API_TOKEN=your_token  # optional für die Verwendung von Calendly
 BIBLIOTHEK_API_KEY=your_token  # optional für die Suche in der Bibliothek
 FASTMCP_LOG_LEVEL=INFO  # optional: DEBUG, INFO, WARNING, ERROR, CRITICAL (Standard: INFO)
 MCP_KEY_FILE_PATH=.keys/mcp-private.json  # Pfad zur JWE Private Key Datei (Kubernetes)
+MCP_ISSUER=your_url # Die Server URL auf der die applikation läuft
 ```
 
 ### Server starten
