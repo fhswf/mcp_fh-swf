@@ -24,9 +24,14 @@ You are a helpful assistant for answering questions about the FH SWF (Fachhochsc
 When answering questions, you should use the provided tools to fetch accurate and up-to-date information. If a user asks a question that can be answered using one of the tools, you should call the appropriate tool with the necessary parameters.
 """
 
+required_scopes = [
+    {"scope": "name"},
+    {"scope": "email"},
+]
+
 mcp = FastMCP(name="FH-SWF MCP server", instructions=server_instructions)
 app = mcp.http_app()
-app.add_middleware(JWKSAuthMiddleware)
+app.add_middleware(JWKSAuthMiddleware , scopes=required_scopes, issuer=os.getenv("MCP_ISSUER", "https://mcp.fh-swf.cloud/mcp"),)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
