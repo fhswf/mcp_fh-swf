@@ -1,6 +1,14 @@
 # CHANGELOG
 
 
+## v0.4.1 (2026-03-20)
+
+### Bug Fixes
+
+- Added scope from mcp middleware update + fix of room booking
+  ([`6e032bd`](https://github.com/fhswf/mcp_fh-swf/commit/6e032bd8100c58e891db3ce857643b38cd8a8d1a))
+
+
 ## v0.4.0 (2026-03-06)
 
 ### Bug Fixes
