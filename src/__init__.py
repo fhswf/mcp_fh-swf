@@ -72,7 +72,7 @@ app = mcp.http_app()
 app.add_middleware(
     OptionalJWKSAuthMiddleware, 
     scopes=required_scopes, 
-    issuer=os.getenv("MCP_ISSUER", "https://mcp.fh-swf.cloud/mcp"),
+    issuer=os.getenv("MCP_ISSUER", "https://mcp.fh-swf.cloud"),
 )
 app.add_middleware(
     CORSMiddleware,
