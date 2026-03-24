@@ -1,6 +1,19 @@
 # CHANGELOG
 
 
+## v0.6.0 (2026-03-24)
+
+### Chores
+
+- Configure VPIS_LOG_LEVEL to DEBUG in deployment.
+  ([`2e41262`](https://github.com/fhswf/mcp_fh-swf/commit/2e41262d64042a6364adef7942a5dd36472ae84b))
+
+### Features
+
+- Configure logging levels via environment variables
+  ([`d079f9a`](https://github.com/fhswf/mcp_fh-swf/commit/d079f9a3fb4a992db47f99a5eed555ccce09eb97))
+
+
 ## v0.5.4 (2026-03-24)
 
 ### Bug Fixes
