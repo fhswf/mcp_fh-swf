@@ -1,6 +1,53 @@
 # CHANGELOG
 
 
+## v0.4.1 (2026-03-20)
+
+### Bug Fixes
+
+- Added scope from mcp middleware update + fix of room booking
+  ([`6e032bd`](https://github.com/fhswf/mcp_fh-swf/commit/6e032bd8100c58e891db3ce857643b38cd8a8d1a))
+
+
+## v0.4.0 (2026-03-06)
+
+### Bug Fixes
+
+- Changed * to as vpis
+  ([`dbf5439`](https://github.com/fhswf/mcp_fh-swf/commit/dbf543905f52692e9f6e5e95d7bb329f401fd176))
+
+- Import os added
+  ([`408d5bc`](https://github.com/fhswf/mcp_fh-swf/commit/408d5bc73e9e3e90b085b19930662d155c753dcb))
+
+- Updated middleware version + main.py fix
+  ([`8cc887e`](https://github.com/fhswf/mcp_fh-swf/commit/8cc887e07b73ef8077503e2f5caea20cbf300958))
+
+### Chores
+
+- **deps**: Bump aiohttp from 3.13.2 to 3.13.3
+  ([`d6dad98`](https://github.com/fhswf/mcp_fh-swf/commit/d6dad9894c924a34bf50ea2e13b310fc9ef36074))
+
+- **deps**: Bump authlib from 1.6.5 to 1.6.6
+  ([`dc968a3`](https://github.com/fhswf/mcp_fh-swf/commit/dc968a3646a6bd512063cef9d6cdbdbbc2e5b586))
+
+- **deps**: Bump cryptography from 46.0.3 to 46.0.5
+  ([`0ebc774`](https://github.com/fhswf/mcp_fh-swf/commit/0ebc7740bd12b0d354ef4d12f03ff3db055766ce))
+
+- **deps**: Bump pillow from 12.0.0 to 12.1.1
+  ([`9ab8f4f`](https://github.com/fhswf/mcp_fh-swf/commit/9ab8f4fb768f5b16130d2d323e14d55a5a0cd95d))
+
+- **deps**: Bump python-multipart from 0.0.20 to 0.0.22
+  ([`3235085`](https://github.com/fhswf/mcp_fh-swf/commit/323508526ed5f9e6ae2e0295ec4098dee7900fe4))
+
+- **deps**: Bump urllib3 from 2.3.0 to 2.6.3
+  ([`63fabcd`](https://github.com/fhswf/mcp_fh-swf/commit/63fabcd66aa173d0f6ea1cb24ecf9f07f9048fd7))
+
+### Features
+
+- Add room booking with encrypted user info middleware
+  ([`25cbaaf`](https://github.com/fhswf/mcp_fh-swf/commit/25cbaaf3caa30522ed5c627f0349f717ecc15bae))
+
+
 ## v0.3.1 (2026-02-18)
 
 ### Bug Fixes
