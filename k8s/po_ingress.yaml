@@ -1,0 +1,21 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: fh-swf-po-ingress
+  annotations:
+    traefik.frontend.passHostHeader: 'true'
+    traefik.ingress.kubernetes.io/router.entrypoints: websecure
+    traefik.ingress.kubernetes.io/router.tls.certresolver: letsencrypt
+spec:
+  rules:
+  - host: mcp.fh-swf.cloud
+    http:
+      paths:
+      # Prüfungsordnungs-API unter /po
+      - path: /po
+        pathType: Prefix
+        backend:
+          service:
+            name: fh-swf-po-service
+            port:
+              number: 8000
