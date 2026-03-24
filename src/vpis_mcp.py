@@ -38,7 +38,7 @@ Room Description: {m.get('room_description', 'Unknown')}
             res += "Employee: " + e + "\n"
         res += "Dates: \n"
         for d in m['dates']:
-            res += f"Date: {d["date"]}, Start: {d["begin"]}, End: {d["end"]}\n"
+            res += f"Date: {d['date']}, Start: {d['begin']}, End: {d['end']}\n"
         res += "\n-----------\n"
     
     return res
@@ -153,7 +153,6 @@ def extract_form_defaults(html: str) -> dict:
     
     patterns = {
         "department": r'name="Veranstaltung\[Department\]"[^>]*>.*?<option[^>]*value="([^"]+)"[^>]*selected',
-        "scheduler": r'name="scheduler"[^>]*>.*?<option[^>]*value="([^"]+)"[^>]*selected',
     }
     
     for key, pattern in patterns.items():
@@ -164,6 +163,41 @@ def extract_form_defaults(html: str) -> dict:
         else:
             defaults[key] = None
             logger.debug(f"No selected option found for {key}")
+
+    # Special handling for scheduler: use selected option, or fallback to the first option
+    scheduler_block = re.search(r'name="scheduler"[^>]*>(.*?)</select>', html, re.DOTALL | re.IGNORECASE)
+    if scheduler_block:
+        defaults["scheduler"] = None
+        first_valid_val = None
+        selected_val = None
+        
+        for match in re.finditer(r'<option([^>]*)value="([^"]*)"([^>]*)>(.*?)</option>', scheduler_block.group(1), re.IGNORECASE | re.DOTALL):
+            attrs_before = match.group(1).lower()
+            val = match.group(2).strip()
+            attrs_after = match.group(3).lower()
+            text = match.group(4).strip()
+            
+            is_selected = 'selected' in attrs_before or 'selected' in attrs_after
+            is_valid = bool(val) and "kein planer" not in text.lower()
+            
+            if is_valid:
+                if first_valid_val is None:
+                    first_valid_val = val
+                if is_selected:
+                    selected_val = val
+                    break
+        
+        if selected_val:
+            defaults["scheduler"] = selected_val
+            logger.debug(f"Found scheduler (selected): {defaults['scheduler']}")
+        elif first_valid_val:
+            defaults["scheduler"] = first_valid_val
+            logger.debug(f"Found scheduler (first valid option fallback): {defaults['scheduler']}")
+        else:
+            logger.debug("No valid option found for scheduler")
+    else:
+        defaults["scheduler"] = None
+        logger.debug("No scheduler select block found")
     
     event_types = {}
     art_block = re.search(

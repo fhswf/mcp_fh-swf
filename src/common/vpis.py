@@ -251,7 +251,7 @@ def get_weekday_from_date(date_str: str) -> str:
 # Holt den Raum für einen Standort
 def get_location_from_room(room_name: str) -> str:
     for loc, prefix in LOCATION_PREFIXES.items():
-        if room_name.startswith(prefix):
+        if room_name.upper().startswith(prefix.upper()):
             logger.debug(f"Room {room_name} -> location {loc}") 
             return loc
     logger.error(f"Unknown location prefix in room: {room_name}")  
