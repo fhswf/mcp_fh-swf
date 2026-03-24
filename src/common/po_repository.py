@@ -11,10 +11,34 @@ Datenmodell:
 
 import logging
 from typing import List, Dict, Optional
-from datetime import datetime
+from datetime import datetime, date as date_type
 from neo4j import GraphDatabase
+from neo4j.time import Date, DateTime
 
 logger = logging.getLogger(__name__)
+
+
+def convert_neo4j_types(data):
+    """Konvertiert Neo4j-Typen (Date, DateTime) zu Python-Typen - rekursiv."""
+    if isinstance(data, dict):
+        return {key: convert_neo4j_types(value) for key, value in data.items()}
+    elif isinstance(data, list):
+        return [convert_neo4j_types(item) for item in data]
+    elif isinstance(data, DateTime):
+        return datetime(
+            data.year,
+            data.month,
+            data.day,
+            data.hour,
+            data.minute,
+            data.second,
+            data.nanosecond // 1000,
+            tzinfo=data.tzinfo,
+        )
+    elif isinstance(data, Date):
+        return date_type(data.year, data.month, data.day)
+    else:
+        return data
 
 
 class PORepository:
@@ -280,7 +304,7 @@ class PORepository:
         """
         with self.driver.session() as session:
             results = session.run(cypher)
-            return [dict(record["po"]) for record in results]
+            return [convert_neo4j_types(dict(record["po"])) for record in results]
 
     async def get_po_by_id(self, po_id: str) -> Optional[Dict]:
         """
@@ -318,7 +342,7 @@ class PORepository:
             if record:
                 po_data = dict(record["po"])
                 po_data["module"] = [m for m in record["module"] if m.get("id")]
-                return po_data
+                return convert_neo4j_types(po_data)
             return None
 
     async def get_modules_by_po(self, po_id: str, semester: Optional[int] = None) -> List[Dict]:
