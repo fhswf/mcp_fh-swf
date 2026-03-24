@@ -1,6 +1,20 @@
 # CHANGELOG
 
 
+## v0.6.1 (2026-03-24)
+
+### Bug Fixes
+
+- Prevent `vpis_mcp` logs from being suppressed by adding a dedicated stream handler and disabling
+  propagation.
+  ([`7628c3a`](https://github.com/fhswf/mcp_fh-swf/commit/7628c3a3fedf2ca3867923fb54f2c7355434e45f))
+
+### Chores
+
+- Configure VPIS_LOG_LEVEL to DEBUG in deployment.
+  ([`ba61b89`](https://github.com/fhswf/mcp_fh-swf/commit/ba61b8979546a75e3f8cd70f6854f0e51be2af82))
+
+
 ## v0.6.0 (2026-03-24)
 
 ### Chores
