@@ -1,6 +1,14 @@
 # CHANGELOG
 
 
+## v0.5.4 (2026-03-24)
+
+### Bug Fixes
+
+- Correct JWKS path in OpenID configuration generation for `OptionalJWKSAuthMiddleware`.
+  ([`f6ed975`](https://github.com/fhswf/mcp_fh-swf/commit/f6ed9755df03aef478bc4fcecda608aee669e3b9))
+
+
 ## v0.5.3 (2026-03-24)
 
 ### Bug Fixes
