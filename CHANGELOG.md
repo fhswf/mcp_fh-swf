@@ -1,6 +1,14 @@
 # CHANGELOG
 
 
+## v0.5.3 (2026-03-24)
+
+### Bug Fixes
+
+- Clarify MCP_ISSUER environment variable description
+  ([`62db39c`](https://github.com/fhswf/mcp_fh-swf/commit/62db39c9be721e3a2912751f58952218f8dd6a5b))
+
+
 ## v0.5.2 (2026-03-24)
 
 ### Bug Fixes
