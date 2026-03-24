@@ -16,7 +16,19 @@ logger = logging.getLogger(__name__)
 
 vpis_log_level = os.getenv("VPIS_LOG_LEVEL")
 if vpis_log_level:
-    logging.getLogger("fastmcp.src.vpis_mcp").setLevel(getattr(logging, vpis_log_level.upper(), logging.INFO))
+    vpis_logger = logging.getLogger("fastmcp.src.vpis_mcp")
+    lvl = getattr(logging, vpis_log_level.upper(), logging.INFO)
+    vpis_logger.setLevel(lvl)
+    
+    # Add a dedicated StreamHandler so Uvicorn's default root-handler filtering 
+    # doesn't suppress our custom debug logs
+    sh = logging.StreamHandler()
+    sh.setLevel(lvl)
+    formatter = logging.Formatter('%(levelname)s:     %(name)s - %(message)s')
+    sh.setFormatter(formatter)
+    vpis_logger.addHandler(sh)
+    # Stop the logs from also going to the root logger where they might get squashed or double-printed
+    vpis_logger.propagate = False
 
 __version__ = "0.1.0"
 
