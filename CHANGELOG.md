@@ -1,6 +1,14 @@
 # CHANGELOG
 
 
+## v0.5.2 (2026-03-24)
+
+### Bug Fixes
+
+- MCP issuer URL in middleware configuration
+  ([`6095704`](https://github.com/fhswf/mcp_fh-swf/commit/609570454b0d3ae7fcedeec332d298c033b4d903))
+
+
 ## v0.5.1 (2026-03-24)
 
 ### Bug Fixes
