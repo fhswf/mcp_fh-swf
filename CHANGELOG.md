@@ -1,6 +1,14 @@
 # CHANGELOG
 
 
+## v0.5.1 (2026-03-24)
+
+### Bug Fixes
+
+- Add missing dependencies including `sentence-transformers` and update the project version.
+  ([`398d37e`](https://github.com/fhswf/mcp_fh-swf/commit/398d37ed5db56d0f618e070f1448453ff7993d96))
+
+
 ## v0.5.0 (2026-03-24)
 
 ### Features
