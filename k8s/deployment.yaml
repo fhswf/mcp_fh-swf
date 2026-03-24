@@ -59,7 +59,7 @@ spec:
               secretKeyRef:
                 name: app-secrets
                 key: neo4j_password
-          -name: VPIS_LOG_LEVEL
+          - name: VPIS_LOG_LEVEL
             value: "DEBUG"
       volumes:
       - name: data-volume
