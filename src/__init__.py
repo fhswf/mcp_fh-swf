@@ -30,7 +30,7 @@ if vpis_log_level:
     # Stop the logs from also going to the root logger where they might get squashed or double-printed
     vpis_logger.propagate = False
 
-__version__ = "0.6.0"
+__version__ = "0.7.0"
 
 neo4j_uri = os.getenv('NEO4J_URI')
 neo4j_user = os.getenv('NEO4J_USERNAME')

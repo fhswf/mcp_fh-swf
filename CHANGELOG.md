@@ -1,6 +1,15 @@
 # CHANGELOG
 
 
+## v0.7.0 (2026-03-24)
+
+### Features
+
+- Improve scheduler default value extraction logic, and enable case-insensitive room prefix
+  matching.
+  ([`d566016`](https://github.com/fhswf/mcp_fh-swf/commit/d566016d058bbe7b391101e4c14b7322ab4eb9c2))
+
+
 ## v0.6.1 (2026-03-24)
 
 ### Bug Fixes
