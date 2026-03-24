@@ -162,3 +162,70 @@ Danach lokale Schlüssel sicher löschen:
 ```bash
 mcp-auth-middleware clean
 ```
+
+#### 2. Alternative: Schlüssel über Remote-GUI anlegen (ohne kubectl / deployment.yaml)
+
+Anleitung für die Einrichtung über eine Kubernetes-Web-Oberfläche (Rancher, Kubernetes Dashboard, Lens, etc.).
+
+##### Schritt 1: Schlüssel lokal generieren
+
+```bash
+uv run mcp-auth-middleware generate
+```
+
+Erzeugt `.keys/mcp-private.json` (Private Key) und `.keys/mcp-public.json` (Public Key) im JWKS-Format.
+
+##### Schritt 2: Secret in der GUI anlegen
+
+1. In der Kubernetes-GUI zum richtigen **Namespace** navigieren
+2. **Secrets** → **Create** → Typ **Opaque**
+3. **Name:** `mcp-server-keys`
+4. **Key/Value-Paar:**
+   - **Key:** `mcp_jwks`
+   - **Value:** Kompletten Inhalt von `.keys/mcp-private.json` einfügen
+
+> **Wichtig:** Der Key muss exakt `mcp_jwks` lauten.
+
+Falls die GUI einen **YAML-Editor** bietet, alternativ:
+
+```yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: mcp-server-keys
+  namespace: <DEIN_NAMESPACE>
+type: Opaque
+stringData:
+  mcp_jwks: |
+    <Inhalt von .keys/mcp-private.json hier einfügen>
+```
+
+##### Schritt 3: Deployment prüfen
+
+In der GUI unter **Deployments** → `fh-swf-mcp-deployment` → **Edit** sicherstellen:
+
+| Einstellung | Wert |
+|-------------|------|
+| **Volume** (Secret) | Name: `mcp-secret-volume`, Secret: `mcp-server-keys`, Items: `mcp_jwks` → `key.json` |
+| **Volume Mount** | Pfad: `/etc/mcp/secrets`, Read Only: `true` |
+| **Env-Variable** | `MCP_KEY_FILE_PATH` = `/etc/mcp/secrets/key.json` |
+
+##### Schritt 4: Deployment neu starten
+
+In der GUI **Rollout Restart** / **Redeploy** für `fh-swf-mcp-deployment` auslösen.
+
+##### Schritt 5: Aufräumen & Prüfen
+
+Lokale Schlüssel löschen:
+```bash
+mcp-auth-middleware clean
+```
+
+In der GUI prüfen:
+- Pod-Status = `Running`
+- Keine Key-Fehlermeldungen in den Pod-Logs
+
+> **Troubleshooting:**
+> - **CrashLoopBackOff / FileNotFoundError:** Volume-Mount oder `MCP_KEY_FILE_PATH` falsch konfiguriert
+> - **Invalid key:** JSON-Inhalt von `mcp_jwks` prüfen (keine abgeschnittenen Zeichen, kein doppeltes Base64-Encoding)
+> - **Secret nicht sichtbar:** Muss im selben Namespace wie das Deployment liegen
