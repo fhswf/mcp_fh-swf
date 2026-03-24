@@ -1,20 +1,29 @@
 # CHANGELOG
 
 
+## v0.5.0 (2026-03-24)
+
+### Features
+
+- Allow unauthenticated requests by introducing OptionalJWKSAuthMiddleware.
+  ([`edddf20`](https://github.com/fhswf/mcp_fh-swf/commit/edddf204b1f325e3d4756ef056e218e122824325))
+
+
 ## v0.4.1 (2026-03-20)
-
-### Bug Fixes
-
-- Added scope from mcp middleware update + fix of room booking
-  ([`6e032bd`](https://github.com/fhswf/mcp_fh-swf/commit/6e032bd8100c58e891db3ce857643b38cd8a8d1a))
 
 
 ## v0.4.0 (2026-03-06)
 
 ### Bug Fixes
 
+- Added scope from mcp middleware update + fix of room booking
+  ([`6e032bd`](https://github.com/fhswf/mcp_fh-swf/commit/6e032bd8100c58e891db3ce857643b38cd8a8d1a))
+
 - Changed * to as vpis
   ([`dbf5439`](https://github.com/fhswf/mcp_fh-swf/commit/dbf543905f52692e9f6e5e95d7bb329f401fd176))
+
+- Changed version to of mcp-auth-middleware to 0.1.8
+  ([`ba1f00d`](https://github.com/fhswf/mcp_fh-swf/commit/ba1f00d2266f5b53458f7f7e49c4c2868bf70cad))
 
 - Import os added
   ([`408d5bc`](https://github.com/fhswf/mcp_fh-swf/commit/408d5bc73e9e3e90b085b19930662d155c753dcb))
@@ -46,6 +55,9 @@
 
 - Add room booking with encrypted user info middleware
   ([`25cbaaf`](https://github.com/fhswf/mcp_fh-swf/commit/25cbaaf3caa30522ed5c627f0349f717ecc15bae))
+
+- Added kubernet kubernet documentation
+  ([`acdd4dd`](https://github.com/fhswf/mcp_fh-swf/commit/acdd4ddef4f6de571fc62d9019fbaea021ee9c33))
 
 
 ## v0.3.1 (2026-02-18)
