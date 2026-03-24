@@ -3,7 +3,10 @@ from fastmcp import FastMCP
 import os
 from src.common.Neo4jHandler import Neo4jHandler
 from mcp_auth_middleware import JWKSAuthMiddleware
+from mcp_auth_middleware.middleware import _user_context
 from starlette.middleware.cors import CORSMiddleware
+from starlette.requests import Request
+from starlette.responses import JSONResponse, Response
 
 
 logging.basicConfig(level=logging.INFO)
@@ -29,9 +32,48 @@ required_scopes = [
     {"scope": "email"},
 ]
 
+class OptionalJWKSAuthMiddleware(JWKSAuthMiddleware):
+    async def dispatch(self, request: Request, call_next) -> Response:
+        if request.url.path == self.jwks_path:
+            logger.debug("Serving JWKS endpoint: %s %s", request.method, request.url.path)
+            return JSONResponse(self.verifier.get_jwks())
+        if request.method == "GET" and request.url.path == self.openid_configuration_path:
+            logger.debug("Serving OpenID configuration endpoint: %s %s", request.method, request.url.path)
+            return JSONResponse(self._openid_configuration(request), headers=self._cors_headers())
+
+        auth_header = request.headers.get("authorization", "")
+        if not auth_header.lower().startswith("bearer "):
+            # Allow request without token but leave context empty
+            token = _user_context.set({})
+            try:
+                return await call_next(request)
+            finally:
+                _user_context.reset(token)
+
+        claims = await self.verifier.verify_token(auth_header[7:]) or {}
+        if not claims:
+            return self._invalid_token_response()
+
+        missing_scopes = [scope.as_dict() for scope in self.scopes if scope.scope not in claims]
+        if missing_scopes:
+            return JSONResponse(
+                {"error": "missing_scopes", "missing": missing_scopes},
+                status_code=403,
+            )
+
+        token = _user_context.set(claims)
+        try:
+            return await call_next(request)
+        finally:
+            _user_context.reset(token)
+
 mcp = FastMCP(name="FH-SWF MCP server", instructions=server_instructions)
 app = mcp.http_app()
-app.add_middleware(JWKSAuthMiddleware , scopes=required_scopes, issuer=os.getenv("MCP_ISSUER", "https://mcp.fh-swf.cloud/mcp"),)
+app.add_middleware(
+    OptionalJWKSAuthMiddleware, 
+    scopes=required_scopes, 
+    issuer=os.getenv("MCP_ISSUER", "https://mcp.fh-swf.cloud/mcp"),
+)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
