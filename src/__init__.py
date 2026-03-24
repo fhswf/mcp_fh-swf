@@ -7,6 +7,7 @@ from mcp_auth_middleware.middleware import _user_context
 from starlette.middleware.cors import CORSMiddleware
 from starlette.requests import Request
 from starlette.responses import JSONResponse, Response
+from urllib.parse import urlparse
 
 
 logging.basicConfig(level=logging.INFO)
@@ -33,6 +34,17 @@ required_scopes = [
 ]
 
 class OptionalJWKSAuthMiddleware(JWKSAuthMiddleware):
+    def _openid_configuration(self, request: Request) -> dict:
+        issuer = self.issuer or str(request.base_url).rstrip("/")
+        parsed = urlparse(issuer)
+        base_url = f"{parsed.scheme}://{parsed.netloc}"
+        
+        return {
+            "issuer": issuer,
+            "jwks_uri": f"{base_url}{self.jwks_path}",
+            "scopes_supported": [scope.scope for scope in self.scopes],
+        }
+
     async def dispatch(self, request: Request, call_next) -> Response:
         if request.url.path == self.jwks_path:
             logger.debug("Serving JWKS endpoint: %s %s", request.method, request.url.path)
