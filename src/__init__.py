@@ -10,8 +10,13 @@ from starlette.responses import JSONResponse, Response
 from urllib.parse import urlparse
 
 
-logging.basicConfig(level=logging.INFO)
+log_level = os.getenv("LOG_LEVEL", "INFO").upper()
+logging.basicConfig(level=getattr(logging, log_level, logging.INFO))
 logger = logging.getLogger(__name__)
+
+vpis_log_level = os.getenv("VPIS_LOG_LEVEL")
+if vpis_log_level:
+    logging.getLogger("fastmcp.src.vpis_mcp").setLevel(getattr(logging, vpis_log_level.upper(), logging.INFO))
 
 __version__ = "0.1.0"
 
