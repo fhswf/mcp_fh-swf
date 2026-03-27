@@ -341,7 +341,18 @@ class PORepository:
             record = result.single()
             if record:
                 po_data = dict(record["po"])
-                po_data["module"] = [m for m in record["module"] if m.get("id")]
+                modules = []
+                for m in record["module"]:
+                    if not m.get("id"):
+                        continue
+                    # Provide defaults to prevent Pydantic validation errors
+                    m["ects"] = m.get("ects") or 0.0
+                    m["kuerzel"] = m.get("kuerzel") or ""
+                    m["pruefungsform"] = m.get("pruefungsform") or "N/A"
+                    m["semester"] = m.get("semester") or 1
+                    modules.append(m)
+                
+                po_data["module"] = modules
                 return convert_neo4j_types(po_data)
             return None
 

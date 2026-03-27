@@ -126,17 +126,20 @@ class POPipeline:
         # Pattern für Modulnamen (z.B. "## Modul: Einführung in die Programmierung")
         modul_pattern = r"#{1,3}\s*(?:Modul:?\s*)?([A-ZÄÖÜa-zäöüß0-9\s\-]+)"
 
-        # Pattern für ECTS (z.B. "ECTS: 5", "5 CP", "Credits: 6")
-        ects_pattern = r"(?:ECTS|CP|Credits?):\s*(\d+(?:[.,]\d+)?)"
+        # Pattern für ECTS (z.B. "ECTS: 5", "5 CP", "Credits 6 CP", "5 ECTS")
+        ects_pattern = r"(?i)(?:ECTS|CP|Credits?(?:[-_]Punkte)?)\s*:?\s*(\d+(?:[.,]\d+)?)|(\d+(?:[.,]\d+)?)\s*(?:ECTS|CP|Credits?)"
 
-        # Pattern für Semester (z.B. "Semester: 1", "1. Semester")
-        semester_pattern = r"(?:Semester|Sem\.):\s*(\d+)|(\d+)\.\s*Semester"
+        # Pattern für Semester (z.B. "Semester: 1", "1. Sem.", "1. Semester")
+        semester_pattern = r"(?i)(?:Semester|Sem\.)\s*:?\s*(\d+)|(\d+)\.\s*(?:Semester|Sem\.?)"
 
-        # Pattern für Prüfungsform (z.B. "Prüfungsform: Klausur")
-        pruefungsform_pattern = r"Pr[üu]fungsform:\s*([A-ZÄÖÜa-zäöüß\s\-]+)"
+        # Pattern für Prüfungsform (z.B. "Prüfungsformen Klausur (Bitte...")
+        pruefungsform_pattern = r"(?i)(?:Pr[üu]fungsform(?:en)?|Prüfungsart|Modulprüfung)\s*:?\s*([^|\(]+)|(Klausur|Mündliche Prüfung|Hausarbeit|Projekt|Referat|Kolloquium|Praktikum)"
 
         # Pattern für Kürzel (z.B. "Kürzel: PROG1")
-        kuerzel_pattern = r"K[üu]rzel:\s*([A-Z0-9\-]+)"
+        kuerzel_pattern = r"(?i)K[üu]rzel\s*:?\s*([A-Z0-9\-]+)"
+
+        # Pattern für Professor / Dozent ("Modulbeauftragte*r und hauptamtlich Lehrende Prof. Dr. Heiner Giefers")
+        dozent_pattern = r"(?i)(?:Dozent(?:in)?|Prof\.|Professor(?:in)?|Modulverantwortliche[r*]?|Lehrende[r*]?)\s*:?\s*([^|]+)"
 
         lines = markdown.split("\n")
         current_module = None
@@ -145,42 +148,65 @@ class POPipeline:
             # Neues Modul erkannt
             modul_match = re.search(modul_pattern, line)
             if modul_match and ("Modul" in line or line.startswith("#")):
-                if current_module:
-                    modules.append(current_module)
-
-                current_module = {
-                    "name": modul_match.group(1).strip(),
-                    "kuerzel": "",
-                    "semester": 1,
-                    "ects": 0.0,
-                    "pruefungsform": "N/A",
-                    "dozent": None,
-                    "pflicht_oder_wahl": "Pflicht",
-                }
+                modul_name = modul_match.group(1).strip()
+                
+                # Filtern von falschen Modulen (Unterkapitel oder Dokument-Header)
+                is_subchapter = bool(re.match(r"^\d+\s+", modul_name))
+                is_blacklisted = any(inv in modul_name.lower() for inv in [
+                    "modulhandbuch", "studienverlaufsplan", "inhaltsverzeichnis", 
+                    "pflichtmodule", "wahlpflichtmodule", "studiengang", 
+                    "bachelor", "master", "lernergebnisse", "inhalte"
+                ])
+                
+                if not is_subchapter and not is_blacklisted and len(modul_name) > 3:
+                    if current_module:
+                        modules.append(current_module)
+    
+                    current_module = {
+                        "name": modul_name,
+                        "kuerzel": "",
+                        "semester": 1,
+                        "ects": 0.0,
+                        "pruefungsform": "N/A",
+                        "dozent": None,
+                        "pflicht_oder_wahl": "Pflicht",
+                    }
 
             # Wenn wir in einem Modul sind, Details extrahieren
             if current_module:
                 # ECTS
                 ects_match = re.search(ects_pattern, line)
                 if ects_match:
-                    current_module["ects"] = float(ects_match.group(1).replace(",", "."))
+                    val = ects_match.group(1) or ects_match.group(2)
+                    if val:
+                        current_module["ects"] = float(val.replace(",", "."))
 
                 # Semester
                 semester_match = re.search(semester_pattern, line)
                 if semester_match:
-                    current_module["semester"] = int(
-                        semester_match.group(1) or semester_match.group(2)
-                    )
+                    val = semester_match.group(1) or semester_match.group(2)
+                    if val:
+                        current_module["semester"] = int(val)
 
                 # Prüfungsform
                 pruefungsform_match = re.search(pruefungsform_pattern, line)
                 if pruefungsform_match:
-                    current_module["pruefungsform"] = pruefungsform_match.group(1).strip()
+                    val = pruefungsform_match.group(1) or pruefungsform_match.group(2)
+                    if val:
+                        current_module["pruefungsform"] = val.strip()
 
                 # Kürzel
                 kuerzel_match = re.search(kuerzel_pattern, line)
                 if kuerzel_match:
                     current_module["kuerzel"] = kuerzel_match.group(1).strip()
+                
+                # Dozent
+                dozent_match = re.search(dozent_pattern, line)
+                if dozent_match:
+                    val = dozent_match.group(1).strip()
+                    # Wenn der Name mehr als 2 Zeichen hat, übernehmen
+                    if len(val) > 2:
+                        current_module["dozent"] = val
 
         # Letztes Modul hinzufügen
         if current_module:
