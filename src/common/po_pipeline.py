@@ -155,7 +155,8 @@ class POPipeline:
                 is_blacklisted = any(inv in modul_name.lower() for inv in [
                     "modulhandbuch", "studienverlaufsplan", "inhaltsverzeichnis", 
                     "pflichtmodule", "wahlpflichtmodule", "studiengang", 
-                    "bachelor", "master", "lernergebnisse", "inhalte", "container"
+                    "bachelor", "master", "lernergebnisse", "inhalte", "container", 
+                    "handbuch", "kompetenzen", "funktionen", "Die Ziele des Kurses sind"
                 ])
                 
                 if not is_subchapter and not is_blacklisted and len(modul_name) > 3:
@@ -165,7 +166,7 @@ class POPipeline:
                     current_module = {
                         "name": modul_name,
                         "kuerzel": "",
-                        "semester": 1,
+                        "semester": "1",
                         "ects": 0.0,
                         "pruefungsform": "N/A",
                         "dozent": None,
@@ -186,7 +187,7 @@ class POPipeline:
                 if semester_match:
                     val = semester_match.group(1) or semester_match.group(2)
                     if val:
-                        current_module["semester"] = int(val)
+                        current_module["semester"] = str(val).strip()
 
                 # Prüfungsform
                 pruefungsform_match = re.search(pruefungsform_pattern, line)
@@ -297,7 +298,7 @@ class POPipeline:
                     modul_id=modul_id,
                     name=modul["name"],
                     kuerzel=modul.get("kuerzel", ""),
-                    semester=modul.get("semester", 1),
+                    semester=modul.get("semester", "1"),
                     pflicht_oder_wahl=modul.get("pflicht_oder_wahl", "Pflicht"),
                 )
 
