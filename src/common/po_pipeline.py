@@ -133,7 +133,7 @@ class POPipeline:
         semester_pattern = r"(?i)(?:Semester|Sem\.)\s*:?\s*(\d+)|(\d+)\.\s*(?:Semester|Sem\.?)"
 
         # Pattern für Prüfungsform (z.B. "Prüfungsformen Klausur (Bitte...")
-        pruefungsform_pattern = r"(?i)(?:Pr[üu]fungsform(?:en)?|Prüfungsart|Modulprüfung)\s*:?\s*([^|\(]+)|(Klausur|Mündliche Prüfung|Hausarbeit|Projekt|Referat|Kolloquium|Praktikum)"
+        pruefungsform_pattern = r"(?i)(?:Pr[üu]fungsform(?:en)?|Prüfungsart|Modulprüfung)\s*:?\s*([^|]+)|(Kombinationsprüfung|Ausarbeitung|Hausarbeit|Portfolio|Klausur|Mündliche Prüfung|Projekt|Referat|Kolloquium|Praktikum)"
 
         # Pattern für Kürzel (z.B. "Kürzel: PROG1")
         kuerzel_pattern = r"(?i)K[üu]rzel\s*:?\s*([A-Z0-9\-]+)"
@@ -193,7 +193,11 @@ class POPipeline:
                 if pruefungsform_match:
                     val = pruefungsform_match.group(1) or pruefungsform_match.group(2)
                     if val:
-                        current_module["pruefungsform"] = val.strip()
+                        val = val.strip()
+                        # Unnötige Boilerplate-Texte entfernen, aber wichtige Klammern (wie §-Verweise) behalten
+                        val = re.sub(r"(?i)\(Bitte beachten Sie den Prüfungsplan[^)]*\)", "", val).strip()
+                        if len(val) > 2:
+                            current_module["pruefungsform"] = val
 
                 # Kürzel
                 kuerzel_match = re.search(kuerzel_pattern, line)
