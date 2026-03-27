@@ -10,6 +10,9 @@ from typing import List, Optional
 from datetime import date, datetime
 
 from fastapi import FastAPI, UploadFile, File, Depends, HTTPException, Form
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
 
 from src.common.po_auth import get_current_user
@@ -26,6 +29,18 @@ po_app = FastAPI(
     version="1.0.0",
     description="API zur Verwaltung von Prüfungsordnungen der FH-SWF",
 )
+
+# CORS-Middleware
+po_app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # In Produktion auf spezifische Origins einschränken
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# StaticFiles für Frontend
+po_app.mount("/static", StaticFiles(directory="static"), name="static")
 
 # Handler initialisieren
 s3_handler = S3Handler()
@@ -88,6 +103,17 @@ class HealthResponse(BaseModel):
 
 
 # ==================== Endpoints ====================
+
+@po_app.get("/")
+async def root():
+    """
+    Frontend-Anwendung ausliefern.
+
+    Returns:
+        HTML-Datei der PO-Verwaltung
+    """
+    return FileResponse("static/po_verwaltung.html")
+
 
 @po_app.get("/api/v1/health", response_model=HealthResponse)
 async def health_check():
