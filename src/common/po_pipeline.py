@@ -155,7 +155,7 @@ class POPipeline:
                 is_blacklisted = any(inv in modul_name.lower() for inv in [
                     "modulhandbuch", "studienverlaufsplan", "inhaltsverzeichnis", 
                     "pflichtmodule", "wahlpflichtmodule", "studiengang", 
-                    "bachelor", "master", "lernergebnisse", "inhalte"
+                    "bachelor", "master", "lernergebnisse", "inhalte", "container"
                 ])
                 
                 if not is_subchapter and not is_blacklisted and len(modul_name) > 3:
