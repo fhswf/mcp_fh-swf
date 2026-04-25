@@ -1,0 +1,23 @@
+# ⚠️ DEPRECATED: This workflow has been replaced by release-please.yaml
+# 
+# Previously used: python-semantic-release
+# Now using: googleapis/release-please-action
+#
+# See: .github/workflows/release-please.yaml
+
+name: Continuous Delivery (DEPRECATED)
+
+on:
+  push:
+    branches:
+      - deprecated-branch-to-never-trigger
+
+jobs:
+  notice:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Workflow Disabled
+        run: |
+          echo "This workflow is deprecated and has been replaced by release-please.yaml"
+          echo "The old workflow based on python-semantic-release is no longer used."
+          exit 0

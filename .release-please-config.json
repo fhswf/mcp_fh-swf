@@ -1,0 +1,42 @@
+{
+    "release-type": "python",
+    "packages": {
+        ".": {
+            "package-name": "fh-swf-mcp-server",
+            "bump-minor-pre-major": true,
+            "prerelease-type": "rc"
+        }
+    },
+    "changelog-sections": [
+        {
+            "type": "feat",
+            "section": "Features",
+            "hidden": false
+        },
+        {
+            "type": "fix",
+            "section": "Bug Fixes",
+            "hidden": false
+        },
+        {
+            "type": "docs",
+            "section": "Documentation",
+            "hidden": false
+        },
+        {
+            "type": "chore",
+            "section": "Miscellaneous",
+            "hidden": true
+        }
+    ],
+    "version-file": "src/__init__.py",
+    "changelog-path": "CHANGELOG.md",
+    "pull-request-header": "🚀 Release",
+    "pull-request-title-pattern": "chore: release${scope} ${version}",
+    "separate-pull-requests": false,
+    "sequential-calls": false,
+    "skip-github-release": false,
+    "draft-pull-request": false,
+    "draft-release": false,
+    "prerelease": false
+}

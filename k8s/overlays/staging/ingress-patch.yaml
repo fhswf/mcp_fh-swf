@@ -1,0 +1,16 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: fh-swf-ingress
+spec:
+  rules:
+  - host: mcp-staging.fh-swf.cloud
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: fh-swf-mcp-service-staging
+            port:
+              number: 8000
