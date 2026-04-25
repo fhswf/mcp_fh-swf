@@ -23,7 +23,8 @@ import src.appointme_mcp
 asyncio.run(src.appointme_mcp.init())
 
 from po_api import po_app
-from src.po_mcp import *
+import src.po_mcp
+_ = src.po_mcp
 
 app.mount("/po", po_app)
 
