@@ -1,0 +1,100 @@
+name: Deploy to Kubernetes
+
+on:
+  push:
+    branches:
+      - main
+      - prod
+    paths:
+      - 'k8s/**'
+      - '.github/workflows/deploy.yaml'
+      - 'Dockerfile'
+      - 'src/**'
+      - 'pyproject.toml'
+
+permissions:
+  contents: read
+  packages: read
+
+env:
+  REGISTRY: ghcr.io
+
+jobs:
+  determine-env:
+    runs-on: ubuntu-latest
+    outputs:
+      environment: ${{ steps.set-env.outputs.env }}
+      overlay: ${{ steps.set-env.outputs.overlay }}
+      image-tag: ${{ steps.image-tag.outputs.tag }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Determine Environment
+        id: set-env
+        run: |
+          if [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
+            echo "env=staging" >> $GITHUB_OUTPUT
+            echo "overlay=staging" >> $GITHUB_OUTPUT
+          elif [[ "${{ github.ref }}" == "refs/heads/prod" ]]; then
+            echo "env=prod" >> $GITHUB_OUTPUT
+            echo "overlay=prod" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Determine Image Tag
+        id: image-tag
+        run: |
+          if [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
+            # Staging: use short Git SHA
+            SHORT_SHA=$(git rev-parse --short HEAD)
+            echo "tag=main-${SHORT_SHA}" >> $GITHUB_OUTPUT
+          elif [[ "${{ github.ref }}" == "refs/heads/prod" ]]; then
+            # Prod: use release tag
+            TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "v0.0.0")
+            echo "tag=${TAG}" >> $GITHUB_OUTPUT
+          fi
+
+  deploy:
+    needs: determine-env
+    runs-on: ubuntu-latest
+    environment: ${{ needs.determine-env.outputs.environment }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Kustomize
+        run: |
+          curl -s "https://raw.githubusercontent.com/kubernetes-sigs/kustomize/master/hack/install_kustomize.sh" | bash
+          sudo mv kustomize /usr/local/bin/
+
+      - name: Build Kustomize manifests with image tag
+        run: |
+          # Build manifests with correct image tag
+          kustomize build k8s/overlays/${{ needs.determine-env.outputs.overlay }} \
+            --enable-alpha-plugins \
+            --load-restrictor LoadRestrictionsNone > manifests.yaml
+          
+          # Replace image tag placeholders
+          sed -i "s|main-\${GIT_SHA}|${{ needs.determine-env.outputs.image-tag }}|g" manifests.yaml
+          sed -i "s|\${RELEASE_VERSION}|${{ needs.determine-env.outputs.image-tag }}|g" manifests.yaml
+          
+          echo "=== Generated manifests (image tag: ${{ needs.determine-env.outputs.image-tag }}) ==="
+          grep "image:" manifests.yaml | head -5
+
+      - name: Deploy to Kubernetes
+        run: |
+          # This step assumes kubectl is configured via KUBE_CONFIG secret
+          echo "${{ secrets.KUBE_CONFIG }}" | base64 -d > $HOME/.kube/config
+          kubectl apply -f manifests.yaml
+          kubectl rollout status deployment/fh-swf-mcp-deployment-${{ needs.determine-env.outputs.overlay }} -n mcp-fh-swf-${{ needs.determine-env.outputs.overlay }}
+
+      - name: Verify Deployment
+        run: |
+          kubectl get deployments,services,ingress -n mcp-fh-swf-${{ needs.determine-env.outputs.overlay }}
+          
+      - name: Deployment Summary
+        run: |
+          echo "✅ Deployment successful"
+          echo "Environment: ${{ needs.determine-env.outputs.environment }}"
+          echo "Overlay: ${{ needs.determine-env.outputs.overlay }}"
+          echo "Image tag: ${{ needs.determine-env.outputs.image-tag }}"
