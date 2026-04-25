@@ -12,7 +12,6 @@ Datenmodell:
 import logging
 from typing import List, Dict, Optional
 from datetime import datetime, date as date_type
-from neo4j import GraphDatabase
 from neo4j.time import Date, DateTime
 
 logger = logging.getLogger(__name__)
