@@ -1,12 +1,97 @@
 # CHANGELOG
 
 
+## v0.7.0 (2026-03-24)
+
+### Features
+
+- Improve scheduler default value extraction logic, and enable case-insensitive room prefix
+  matching.
+  ([`d566016`](https://github.com/fhswf/mcp_fh-swf/commit/d566016d058bbe7b391101e4c14b7322ab4eb9c2))
+
+
+## v0.6.1 (2026-03-24)
+
+### Bug Fixes
+
+- Prevent `vpis_mcp` logs from being suppressed by adding a dedicated stream handler and disabling
+  propagation.
+  ([`7628c3a`](https://github.com/fhswf/mcp_fh-swf/commit/7628c3a3fedf2ca3867923fb54f2c7355434e45f))
+
+### Chores
+
+- Configure VPIS_LOG_LEVEL to DEBUG in deployment.
+  ([`ba61b89`](https://github.com/fhswf/mcp_fh-swf/commit/ba61b8979546a75e3f8cd70f6854f0e51be2af82))
+
+
+## v0.6.0 (2026-03-24)
+
+### Chores
+
+- Configure VPIS_LOG_LEVEL to DEBUG in deployment.
+  ([`2e41262`](https://github.com/fhswf/mcp_fh-swf/commit/2e41262d64042a6364adef7942a5dd36472ae84b))
+
+### Features
+
+- Configure logging levels via environment variables
+  ([`d079f9a`](https://github.com/fhswf/mcp_fh-swf/commit/d079f9a3fb4a992db47f99a5eed555ccce09eb97))
+
+
+## v0.5.4 (2026-03-24)
+
+### Bug Fixes
+
+- Correct JWKS path in OpenID configuration generation for `OptionalJWKSAuthMiddleware`.
+  ([`f6ed975`](https://github.com/fhswf/mcp_fh-swf/commit/f6ed9755df03aef478bc4fcecda608aee669e3b9))
+
+
+## v0.5.3 (2026-03-24)
+
+### Bug Fixes
+
+- Clarify MCP_ISSUER environment variable description
+  ([`62db39c`](https://github.com/fhswf/mcp_fh-swf/commit/62db39c9be721e3a2912751f58952218f8dd6a5b))
+
+
+## v0.5.2 (2026-03-24)
+
+### Bug Fixes
+
+- MCP issuer URL in middleware configuration
+  ([`6095704`](https://github.com/fhswf/mcp_fh-swf/commit/609570454b0d3ae7fcedeec332d298c033b4d903))
+
+
+## v0.5.1 (2026-03-24)
+
+### Bug Fixes
+
+- Add missing dependencies including `sentence-transformers` and update the project version.
+  ([`398d37e`](https://github.com/fhswf/mcp_fh-swf/commit/398d37ed5db56d0f618e070f1448453ff7993d96))
+
+
+## v0.5.0 (2026-03-24)
+
+### Features
+
+- Allow unauthenticated requests by introducing OptionalJWKSAuthMiddleware.
+  ([`edddf20`](https://github.com/fhswf/mcp_fh-swf/commit/edddf204b1f325e3d4756ef056e218e122824325))
+
+
+## v0.4.1 (2026-03-20)
+
+
 ## v0.4.0 (2026-03-06)
 
 ### Bug Fixes
 
+- Added scope from mcp middleware update + fix of room booking
+  ([`6e032bd`](https://github.com/fhswf/mcp_fh-swf/commit/6e032bd8100c58e891db3ce857643b38cd8a8d1a))
+
 - Changed * to as vpis
   ([`dbf5439`](https://github.com/fhswf/mcp_fh-swf/commit/dbf543905f52692e9f6e5e95d7bb329f401fd176))
+
+- Changed version to of mcp-auth-middleware to 0.1.8
+  ([`ba1f00d`](https://github.com/fhswf/mcp_fh-swf/commit/ba1f00d2266f5b53458f7f7e49c4c2868bf70cad))
 
 - Import os added
   ([`408d5bc`](https://github.com/fhswf/mcp_fh-swf/commit/408d5bc73e9e3e90b085b19930662d155c753dcb))
@@ -38,6 +123,9 @@
 
 - Add room booking with encrypted user info middleware
   ([`25cbaaf`](https://github.com/fhswf/mcp_fh-swf/commit/25cbaaf3caa30522ed5c627f0349f717ecc15bae))
+
+- Added kubernet kubernet documentation
+  ([`acdd4dd`](https://github.com/fhswf/mcp_fh-swf/commit/acdd4ddef4f6de571fc62d9019fbaea021ee9c33))
 
 
 ## v0.3.1 (2026-02-18)
