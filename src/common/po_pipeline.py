@@ -15,7 +15,6 @@ import re
 import logging
 import tempfile
 from typing import Dict, List, Tuple
-from datetime import datetime
 import uuid
 
 from docling.document_converter import DocumentConverter, FormatOption
