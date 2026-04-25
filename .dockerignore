@@ -3,3 +3,6 @@
 .env.*
 Neo4j-c405760b-Created-2025-10-13.txt
 k8s/
+.devcontainer/
+.git/
+.github/

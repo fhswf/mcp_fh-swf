@@ -1,0 +1,20 @@
+FROM ghcr.io/astral-sh/uv:python3.13-bookworm
+
+# Install common dev tools
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    git \
+    curl \
+    wget \
+    make \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /workspace
+
+# Pre-install dependencies into the venv so the first attach is fast.
+# The actual source is mounted as a volume, so we copy only the lockfiles
+# at build time and sync. A volume-mount of the project root will overlay
+# the source files at runtime.
+COPY pyproject.toml uv.lock* ./
+RUN uv sync --frozen || uv sync
+
+# The project source will be bind-mounted at /workspace by Docker Compose.
