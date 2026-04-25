@@ -14,7 +14,7 @@ import os
 import re
 import logging
 import tempfile
-from typing import Dict, List, Tuple, Optional
+from typing import Dict, List, Tuple
 from datetime import datetime
 import uuid
 
