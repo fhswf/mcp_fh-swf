@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="de" class="light">
+
+<head>
+  <meta charset="utf-8" />
+  <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+  <title>PO-Verwaltung · FH Südwestfalen</title>
+  <script src="https://cdn.tailwindcss.com?plugins=forms"></script>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&family=Inter:wght@400;500;600&display=swap"
+    rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap"
+    rel="stylesheet" />
+  <script>
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          colors: {
+            primary: "#003e6f",
+            "primary-hover": "#004d85",
+            "surface": "#f8f9fa",
+            "surface-card": "#ffffff",
+            "surface-container": "#edeeef",
+            "outline-variant": "#c1c7d2",
+            "secondary-container": "#cadefe",
+            "on-secondary-container": "#4e627d",
+          },
+          fontFamily: { headline: ["Manrope"], body: ["Inter"] },
+          borderRadius: { DEFAULT: "0.375rem", lg: "0.5rem", xl: "0.75rem", full: "9999px" },
+        }
+      }
+    }
+  </script>
+  <link rel="stylesheet" href="/po/static/style.css">
+</head>
+
+<body class="bg-surface text-slate-900 dark:bg-gray-900 dark:text-slate-100 flex overflow-hidden h-screen">
+
+  <!-- SIDEBAR -->
+  <aside id="sidebar"
+    class="w-64 flex-shrink-0 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 flex flex-col h-screen sticky top-0">
+    <div class="p-5 border-b border-gray-200 dark:border-gray-700">
+      <div class="flex flex-col gap-1.5">
+        <img src="/po/static/fhswf_logo.png" alt="Fachhochschule Südwestfalen" class="h-10 w-auto object-contain" />
+        <p class="text-[10px] uppercase tracking-wider text-slate-400 font-bold mt-3">PO-Verwaltung</p>
+      </div>
+    </div>
+    <nav class="flex-1 py-4 px-3 space-y-1">
+      <button onclick="showView('dashboard')"
+        class="nav-btn nav-active w-full flex items-center gap-3 px-4 py-2.5 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-gray-700 rounded-lg transition-all text-sm">
+        <span class="material-symbols-outlined text-[18px]">dashboard</span>Übersicht
+      </button>
+      <button onclick="showView('upload')"
+        class="nav-btn w-full flex items-center gap-3 px-4 py-2.5 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-gray-700 rounded-lg transition-all text-sm">
+        <span class="material-symbols-outlined text-[18px]">cloud_upload</span>Hochladen
+      </button>
+      <button onclick="showView('search')"
+        class="nav-btn w-full flex items-center gap-3 px-4 py-2.5 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-gray-700 rounded-lg transition-all text-sm">
+        <span class="material-symbols-outlined text-[18px]">search</span>Modulsuche
+      </button>
+    </nav>
+    <div class="p-4 border-t border-gray-200 dark:border-gray-700">
+      <div class="flex items-center gap-3 p-2 bg-slate-50 dark:bg-gray-700 rounded-lg hairline">
+        <div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-white text-xs font-bold">PA
+        </div>
+        <div class="flex-1 min-w-0">
+          <p class="text-xs font-bold truncate">Prüfungsamt</p>
+          <p class="text-[10px] text-slate-500 dark:text-slate-400 truncate">Verwaltung</p>
+        </div>
+        <button onclick="toggleDark()"
+          class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors"
+          title="Dark/Light Mode">
+          <span class="material-symbols-outlined text-[18px]" id="theme-icon">dark_mode</span>
+        </button>
+      </div>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <div class="flex-1 flex flex-col min-w-0 overflow-hidden">
+
+    <!-- TOPBAR -->
+    <header
+      class="h-14 flex-shrink-0 flex items-center justify-between px-6 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 sticky top-0 z-10">
+      <h2 class="text-base font-extrabold text-slate-900 dark:text-slate-100 tracking-tight" id="page-title">Übersicht
+      </h2>
+      <div class="flex items-center gap-3">
+        <div class="relative" id="search-container">
+          <span
+            class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-[16px]">search</span>
+          <input id="top-search" type="text" placeholder="PO suchen..." oninput="filterPOs(this.value)"
+            class="w-52 bg-slate-50 dark:bg-gray-700 hairline rounded-lg pl-8 pr-3 py-1.5 text-sm dark:text-slate-200 dark:placeholder-slate-400 transition-colors" />
+        </div>
+        <button onclick="showView('upload')"
+          class="bg-primary hover:bg-primary-hover text-white px-3.5 py-1.5 rounded-lg text-sm font-bold flex items-center gap-1.5 transition-colors">
+          <span class="material-symbols-outlined text-[16px]">add</span>Hochladen
+        </button>
+      </div>
+    </header>
+
+    <!-- CONTENT WRAPPER -->
+    <div class="flex flex-1 overflow-hidden">
+      <div class="flex-1 overflow-y-auto">
+
+        <!-- DASHBOARD VIEW -->
+        <div id="view-dashboard" class="view active p-6 gap-6">
+          <!-- Metrics -->
+          <div class="grid grid-cols-3 gap-4">
+            <div class="bg-white dark:bg-gray-800 hairline rounded-xl p-4 flex items-center gap-4">
+              <div class="w-9 h-9 rounded-lg bg-blue-50 dark:bg-blue-900/30 flex items-center justify-center">
+                <span class="material-symbols-outlined text-primary dark:text-blue-400 text-[18px]">description</span>
+              </div>
+              <div>
+                <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Gesamt POs</p>
+                <h3 class="text-2xl font-extrabold" id="m-total">4</h3>
+              </div>
+            </div>
+            <div class="bg-white dark:bg-gray-800 hairline rounded-xl p-4 flex items-center gap-4">
+              <div class="w-9 h-9 rounded-lg bg-blue-50 dark:bg-blue-900/30 flex items-center justify-center">
+                <span class="material-symbols-outlined text-primary dark:text-blue-400 text-[18px]">grid_view</span>
+              </div>
+              <div>
+                <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Module</p>
+                <h3 class="text-2xl font-extrabold" id="m-modules">0</h3>
+              </div>
+            </div>
+            <div class="bg-white dark:bg-gray-800 hairline rounded-xl p-4 flex items-center gap-4">
+              <div class="w-9 h-9 rounded-lg bg-blue-50 dark:bg-blue-900/30 flex items-center justify-center">
+                <span class="material-symbols-outlined text-primary dark:text-blue-400 text-[18px]">history</span>
+              </div>
+              <div>
+                <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Letzte Änderung</p>
+                <h3 class="text-base font-extrabold">Heute</h3>
+              </div>
+            </div>
+          </div>
+          <!-- PO List -->
+          <div>
+            <h3 class="text-sm font-extrabold text-slate-900 dark:text-slate-100 mb-3">Studiengänge</h3>
+            <div id="po-list" class="space-y-2"></div>
+          </div>
+        </div>
+
+        <!-- UPLOAD VIEW -->
+        <div id="view-upload" class="view p-6 gap-6 max-w-2xl">
+          <div id="drop-zone"
+            class="bg-white dark:bg-gray-800 hairline rounded-xl p-10 flex flex-col items-center justify-center border-dashed border-2 border-primary/20 dark:border-blue-800 hover:border-primary dark:hover:border-blue-500 transition-colors cursor-pointer min-h-[220px]"
+            ondragover="event.preventDefault();this.classList.add('drag-over')"
+            ondragleave="this.classList.remove('drag-over')" ondrop="handleDrop(event)"
+            onclick="document.getElementById('file-input').click()">
+            <input type="file" id="file-input" accept=".pdf" class="hidden" onchange="handleFileSelect(this)" />
+            <div id="drop-icon"
+              class="w-14 h-14 bg-blue-50 dark:bg-blue-900/30 rounded-xl flex items-center justify-center mb-4">
+              <span class="material-symbols-outlined text-primary dark:text-blue-400 text-3xl"
+                style="font-variation-settings:'FILL' 1">upload_file</span>
+            </div>
+            <h3 class="text-base font-bold mb-1" id="drop-title">PDF hierher ziehen</h3>
+            <p class="text-sm text-slate-400 dark:text-slate-500 mb-4" id="drop-sub">oder klicken zum Auswählen</p>
+            <span
+              class="px-4 py-1.5 bg-slate-100 dark:bg-gray-700 text-slate-600 dark:text-slate-300 text-xs font-bold rounded-lg hover:bg-slate-200 transition-colors">Datei
+              auswählen</span>
+          </div>
+          <div class="bg-white dark:bg-gray-800 hairline rounded-xl p-6 space-y-5">
+            <div class="space-y-1.5">
+              <label class="text-[10px] font-bold uppercase tracking-widest text-slate-400">Studiengang</label>
+              <input id="f-studiengang" type="text" placeholder="z.B. Informatik (B.Sc.)"
+                class="w-full px-4 py-2.5 text-sm bg-white dark:bg-gray-700 hairline rounded-lg dark:text-slate-200 dark:placeholder-slate-400 transition-colors" />
+            </div>
+            <div class="grid grid-cols-2 gap-4">
+              <div class="space-y-1.5">
+                <label class="text-[10px] font-bold uppercase tracking-widest text-slate-400">Version</label>
+                <input id="f-version" type="text" placeholder="WS2024"
+                  class="w-full px-4 py-2.5 text-sm bg-white dark:bg-gray-700 hairline rounded-lg dark:text-slate-200 dark:placeholder-slate-400 transition-colors" />
+              </div>
+              <div class="space-y-1.5">
+                <label class="text-[10px] font-bold uppercase tracking-widest text-slate-400">Gültig ab</label>
+                <input id="f-date" type="date"
+                  class="w-full px-4 py-2.5 text-sm bg-white dark:bg-gray-700 hairline rounded-lg dark:text-slate-200 transition-colors" />
+              </div>
+            </div>
+            <button onclick="handleUpload()" id="upload-btn"
+              class="w-full bg-primary hover:bg-primary-hover text-white py-3 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-colors">
+              <span class="material-symbols-outlined text-[18px]">cloud_done</span>Hochladen & verarbeiten
+            </button>
+          </div>
+          <div class="flex gap-3 p-4 bg-blue-50 dark:bg-blue-900/20 hairline rounded-xl">
+            <span class="material-symbols-outlined text-primary dark:text-blue-400 text-xl flex-shrink-0">info</span>
+            <p class="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">Nach dem Hochladen wird das Dokument
+              automatisch via Docling in Markdown umgewandelt und alle Module, ECTS-Punkte, Prüfungsformen und Dozenten
+              werden in Neo4j gespeichert.</p>
+          </div>
+          <!-- Verlauf -->
+          <div>
+            <h4 class="text-xs font-bold uppercase tracking-widest text-slate-400 mb-3">Zuletzt hochgeladen</h4>
+            <div id="upload-history" class="space-y-2"></div>
+          </div>
+        </div>
+
+        <!-- SEARCH VIEW -->
+        <div id="view-search" class="view p-6 gap-5">
+          <div class="relative">
+            <span
+              class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 text-[20px]">search</span>
+            <input id="module-search" type="text" placeholder="Suchen nach Modulname, Studiengang oder ECTS..."
+              class="w-full h-12 pl-12 pr-6 bg-white dark:bg-gray-800 hairline rounded-xl text-sm dark:text-slate-200 dark:placeholder-slate-400 transition-all"
+              oninput="searchModules(this.value)" />
+          </div>
+          <!-- Filter chips -->
+          <div class="flex flex-wrap gap-2" id="filter-chips"></div>
+          <!-- Results header -->
+          <div class="flex items-center justify-between">
+            <h3 class="text-xs font-bold text-slate-400 uppercase tracking-widest" id="results-count">Alle Module</h3>
+            <div class="flex items-center gap-2 text-xs text-slate-500">
+              Sortiert nach: <strong class="text-slate-700 dark:text-slate-300" id="sort-label">Modulname</strong>
+              <button onclick="toggleSort()" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
+                <span class="material-symbols-outlined text-[18px]">swap_vert</span>
+              </button>
+            </div>
+          </div>
+          <!-- Table header -->
+          <div
+            class="grid grid-cols-12 px-5 py-2 text-[10px] font-bold text-slate-400 uppercase tracking-wider bg-white dark:bg-gray-800 hairline rounded-lg">
+            <div class="col-span-4">Modulname</div>
+            <div class="col-span-3">Studiengang</div>
+            <div class="col-span-2">Semester</div>
+            <div class="col-span-1">ECTS</div>
+            <div class="col-span-2 text-right">Prüfungsform</div>
+          </div>
+          <div id="search-results" class="space-y-1.5"></div>
+          <div id="no-results" class="hidden text-center py-12 text-slate-400">
+            <span class="material-symbols-outlined text-4xl mb-2 block">search_off</span>
+            <p class="text-sm">Keine Module gefunden</p>
+          </div>
+        </div>
+
+      </div><!-- end content area -->
+
+      <!-- DETAIL PANEL -->
+      <aside id="detail-panel"
+        class="hidden w-88 flex-shrink-0 bg-white dark:bg-gray-800 border-l border-gray-200 dark:border-gray-700 flex flex-col h-full overflow-hidden"
+        style="width:340px">
+        <div class="p-5 border-b border-gray-200 dark:border-gray-700">
+          <div class="flex justify-between items-start mb-1">
+            <span class="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Detailansicht</span>
+            <button onclick="closeDetail()" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 -mt-1">
+              <span class="material-symbols-outlined text-[18px]">close</span>
+            </button>
+          </div>
+          <h2 class="text-base font-extrabold text-slate-900 dark:text-slate-100 leading-tight mb-1" id="detail-title">
+          </h2>
+          <p class="text-xs text-slate-400 mb-4" id="detail-sub"></p>
+          <div class="flex gap-2">
+            <button onclick="confirmDelete()"
+              class="flex-1 py-2 hairline border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 rounded-lg text-xs font-bold hover:bg-red-100 transition-colors">
+              <span class="material-symbols-outlined text-[14px] align-middle">delete</span> Löschen
+            </button>
+            <button class="p-2 hairline rounded-lg hover:bg-slate-50 dark:hover:bg-gray-700 transition-colors">
+              <span class="material-symbols-outlined text-[18px] text-slate-500">edit</span>
+            </button>
+            <button class="p-2 hairline rounded-lg hover:bg-slate-50 dark:hover:bg-gray-700 transition-colors">
+              <span class="material-symbols-outlined text-[18px] text-slate-500">share</span>
+            </button>
+          </div>
+        </div>
+        <div class="flex-1 overflow-y-auto p-5 space-y-5">
+          <div>
+            <h5 class="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-3">Module & Leistungen</h5>
+            <div id="detail-modules" class="space-y-2"></div>
+          </div>
+          <div>
+            <h5 class="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-3">ECTS-Verteilung</h5>
+            <div id="ects-overview" class="space-y-2"></div>
+          </div>
+        </div>
+        <div class="p-4 border-t border-gray-200 dark:border-gray-700">
+          <button onclick="showECTS()"
+            class="w-full bg-primary hover:bg-primary-hover text-white font-bold py-2.5 rounded-xl text-sm flex items-center justify-center gap-2 transition-colors">
+            <span class="material-symbols-outlined text-[16px]">leaderboard</span>ECTS-Übersicht
+          </button>
+        </div>
+      </aside>
+    </div><!-- end content wrapper -->
+  </div><!-- end main -->
+
+  <!-- ECTS MODAL -->
+  <div id="ects-modal" class="hidden fixed inset-0 z-50" style="background:rgba(0,0,0,0.4)">
+    <div
+      style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:480px;max-height:80vh;overflow-y:auto"
+      class="bg-white dark:bg-gray-800 rounded-2xl hairline shadow-lg">
+      <div class="p-5 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
+        <h3 class="font-extrabold text-base" id="ects-modal-title">ECTS-Übersicht</h3>
+        <button onclick="closeModal()" class="text-slate-400 hover:text-slate-600"><span
+            class="material-symbols-outlined">close</span></button>
+      </div>
+      <div class="p-5" id="ects-modal-content"></div>
+    </div>
+  </div>
+
+  <!-- DELETE CONFIRM MODAL -->
+  <div id="delete-modal" class="hidden fixed inset-0 z-50" style="background:rgba(0,0,0,0.4)">
+    <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:380px"
+      class="bg-white dark:bg-gray-800 rounded-2xl hairline">
+      <div class="p-6">
+        <div class="w-12 h-12 bg-red-50 dark:bg-red-900/20 rounded-xl flex items-center justify-center mb-4">
+          <span class="material-symbols-outlined text-red-500 text-2xl">delete_forever</span>
+        </div>
+        <h3 class="font-extrabold text-base mb-2">Prüfungsordnung löschen?</h3>
+        <p class="text-sm text-slate-500 dark:text-slate-400 mb-6">Diese Aktion löscht die PO, alle Module aus Neo4j und
+          die PDF-Datei von S3. Dies kann nicht rückgängig gemacht werden.</p>
+        <div class="flex gap-3">
+          <button onclick="closeDeleteModal()"
+            class="flex-1 py-2.5 hairline rounded-xl text-sm font-bold hover:bg-slate-50 dark:hover:bg-gray-700 transition-colors">Abbrechen</button>
+          <button onclick="executDelete()"
+            class="flex-1 py-2.5 bg-red-600 hover:bg-red-700 text-white rounded-xl text-sm font-bold transition-colors">Löschen</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TOAST -->
+  <div id="toast" class="toast">
+    <div class="bg-white dark:bg-gray-800 hairline rounded-xl px-4 py-3 flex items-center gap-3 shadow-lg">
+      <span class="material-symbols-outlined text-[18px]" id="toast-icon">check_circle</span>
+      <span class="text-sm font-medium" id="toast-msg"></span>
+    </div>
+  </div>
+
+  <script src="/po/static/app.js"></script>
+</body>
+
+</html>
