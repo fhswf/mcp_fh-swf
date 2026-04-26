@@ -1,0 +1,15 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: fh-swf-mcp-deployment
+spec:
+  replicas: 1
+  template:
+    spec:
+      containers:
+      - name: fh-swf-mcp
+        env:
+          - name: VPIS_LOG_LEVEL
+            value: "INFO"
+          - name: ENVIRONMENT
+            value: "staging"
