@@ -22,11 +22,12 @@ asyncio.run(src.portale_mcp.init())
 import src.appointme_mcp
 asyncio.run(src.appointme_mcp.init())
 
-from po_api import po_app
+from po_api import po_app, ui_app
 import src.po_mcp
 _ = src.po_mcp
 
-app.mount("/po", po_app)
+app.mount("/api/v1", po_app)
+app.mount("/ui", ui_app)
 
 
 port = int(os.getenv("PORT", "8000"))

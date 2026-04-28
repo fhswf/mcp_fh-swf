@@ -1,5 +1,5 @@
 // ── DATA ───────────────────────────────────────────────
-const API = window.location.origin + '/po/api/v1';
+const API = window.location.origin + '/api/v1';
 
 let pos = [];
 let filteredPOs = [];
@@ -39,7 +39,7 @@ window.onload = async () => {
 
 async function loadPOs() {
   try {
-    const data = await apiCall('/');
+    const data = await apiCall('/po');
     pos = data.map(p => ({
       id: p.id,
       name: p.studiengang,
@@ -116,7 +116,7 @@ function renderList() {
 async function selectPO(id) {
   try {
     selectedId = id;
-    const poData = await apiCall(`/${id}`);
+    const poData = await apiCall(`/po/${id}`);
 
     // Update local cache
     const po = {
@@ -226,7 +226,7 @@ async function executDelete() {
   if (!selectedId) return;
 
   try {
-    await apiCall(`/${selectedId}`, { method: 'DELETE' });
+    await apiCall(`/po/${selectedId}`, { method: 'DELETE' });
 
     pos = pos.filter(p => p.id !== selectedId);
     filteredPOs = filteredPOs.filter(p => p.id !== selectedId);
@@ -287,7 +287,7 @@ async function handleUpload() {
     formData.append('version', ver);
     formData.append('gueltig_ab', dt);
 
-    const result = await apiCall('/upload', {
+    const result = await apiCall('/po', {
       method: 'POST',
       body: formData
     });
