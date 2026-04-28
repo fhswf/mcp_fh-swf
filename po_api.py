@@ -6,8 +6,10 @@ po_app wird in main.py unter /api/v1 gemountet.
 ui_app wird in main.py unter /ui gemountet.
 """
 
+import asyncio
 import logging
-from typing import List, Optional
+import uuid
+from typing import List, Optional, Dict, Any
 from datetime import date, datetime
 
 from fastapi import FastAPI, UploadFile, File, Depends, HTTPException, Form
@@ -52,18 +54,13 @@ s3_handler = S3Handler()
 po_repository = PORepository(neo_handler.driver)
 pipeline = POPipeline(s3_handler, po_repository)
 
+# In-Memory Job-Store
+jobs: Dict[str, Any] = {}
+
 
 # ==================== Pydantic Schemas ====================
 
-class POUploadRequest(BaseModel):
-    """Request-Schema für PO-Upload"""
-    studiengang: str = Field(..., description="Name des Studiengangs")
-    version: str = Field(..., description="Version (z.B. WS2024)")
-    gueltig_ab: date = Field(..., description="Gültigkeitsdatum")
-
-
 class ModuleOut(BaseModel):
-    """Response-Schema für Module"""
     name: str
     kuerzel: str
     semester: str
@@ -73,7 +70,6 @@ class ModuleOut(BaseModel):
 
 
 class PODetail(BaseModel):
-    """Response-Schema für PO-Details"""
     id: str
     studiengang: str
     version: str
@@ -86,70 +82,252 @@ class PODetail(BaseModel):
 
 
 class POListItem(BaseModel):
-    """Response-Schema für PO-Liste"""
     id: str
     studiengang: str
     version: str
     gueltig_ab: date
     status: str
     created_at: datetime
+    module_count: int = 0
 
 
 class POUpdateRequest(BaseModel):
-    """Request-Schema für PO-Metadaten-Update"""
     studiengang: Optional[str] = None
     version: Optional[str] = None
 
 
 class HealthResponse(BaseModel):
-    """Response-Schema für Health Check"""
     status: str
     timestamp: datetime
+
+
+class JobStep(BaseModel):
+    name: str
+    status: str  # pending | processing | done | error
+
+
+class JobStatus(BaseModel):
+    id: str
+    status: str  # pending | processing | ready | error
+    steps: List[JobStep]
+    po_id: Optional[str] = None
+    error: Optional[str] = None
+    created_at: datetime
+
+
+class JobCreated(BaseModel):
+    job_id: str
+
+
+# ==================== Job-Hilfsfunktionen ====================
+
+def make_job(job_id: str) -> Dict:
+    return {
+        "id": job_id,
+        "status": "pending",
+        "steps": [
+            {"name": "PDF validieren",     "status": "pending"},
+            {"name": "PDF konvertieren",   "status": "pending"},
+            {"name": "Module extrahieren", "status": "pending"},
+            {"name": "S3 Upload",          "status": "pending"},
+            {"name": "Neo4j speichern",    "status": "pending"},
+        ],
+        "po_id": None,
+        "error": None,
+        "created_at": datetime.utcnow(),
+        # Payload für Retry gespeichert
+        "_file_content": None,
+        "_filename": None,
+        "_studiengang": None,
+        "_version": None,
+        "_gueltig_ab": None,
+    }
+
+
+def set_step(job: Dict, index: int, status: str):
+    job["steps"][index]["status"] = status
+
+
+async def run_pipeline(job_id: str):
+    job = jobs[job_id]
+    job["status"] = "processing"
+
+    file_content = job["_file_content"]
+    filename     = job["_filename"]
+    studiengang  = job["_studiengang"]
+    version      = job["_version"]
+    gueltig_ab   = job["_gueltig_ab"]
+
+    try:
+        # Schritt 0: PDF validieren
+        set_step(job, 0, "processing")
+        is_valid, error_msg = await pipeline.validate_pdf(file_content, filename)
+        if not is_valid:
+            set_step(job, 0, "error")
+            job["status"] = "error"
+            job["error"] = error_msg
+            return
+        set_step(job, 0, "done")
+
+        # Schritt 1: PDF konvertieren
+        set_step(job, 1, "processing")
+        import tempfile, os
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp:
+            tmp.write(file_content)
+            tmp_path = tmp.name
+        try:
+            markdown = await pipeline.pdf_to_markdown(tmp_path)
+        finally:
+            if os.path.exists(tmp_path):
+                os.remove(tmp_path)
+        set_step(job, 1, "done")
+
+        # Schritt 2: Module extrahieren
+        set_step(job, 2, "processing")
+        modules = await pipeline.extract_modules_from_markdown(markdown)
+        set_step(job, 2, "done")
+
+        # PO in Neo4j anlegen
+        po_id = str(uuid.uuid4())
+        await po_repository.create_pruefungsordnung(
+            po_id=po_id,
+            studiengang=studiengang,
+            version=version,
+            gueltig_ab=gueltig_ab,
+            s3_key="",
+            status="processing",
+        )
+
+        # Schritt 3: S3 Upload
+        set_step(job, 3, "processing")
+        s3_key = await s3_handler.upload_pdf(file_content, studiengang, version, po_id)
+        await po_repository.create_pruefungsordnung(
+            po_id=po_id,
+            studiengang=studiengang,
+            version=version,
+            gueltig_ab=gueltig_ab,
+            s3_key=s3_key,
+            status="processing",
+        )
+        set_step(job, 3, "done")
+
+        # Schritt 4: Neo4j speichern
+        set_step(job, 4, "processing")
+        for idx, modul in enumerate(modules):
+            modul_id = f"{po_id}-modul-{idx}"
+            await po_repository.create_modul(
+                po_id=po_id,
+                modul_id=modul_id,
+                name=modul["name"],
+                kuerzel=modul.get("kuerzel", ""),
+                semester=modul.get("semester", "1"),
+                pflicht_oder_wahl=modul.get("pflicht_oder_wahl", "Pflicht"),
+            )
+            if modul.get("ects", 0) > 0:
+                await po_repository.create_ects(
+                    modul_id=modul_id,
+                    punkte=modul["ects"],
+                    workload_h=int(modul["ects"] * 30),
+                )
+            if modul.get("pruefungsform"):
+                await po_repository.create_pruefungsform(
+                    modul_id=modul_id, typ=modul["pruefungsform"]
+                )
+            if modul.get("dozent"):
+                await po_repository.create_dozent(name=modul["dozent"])
+                await po_repository.link_modul_to_dozent(modul_id, modul["dozent"])
+
+        await po_repository.update_po_status(po_id, "ready")
+        set_step(job, 4, "done")
+
+        job["po_id"] = po_id
+        job["status"] = "ready"
+        logger.info(f"Job {job_id} abgeschlossen: PO {po_id}")
+
+    except Exception as e:
+        logger.error(f"Fehler in Job {job_id}: {e}")
+        # Aktuell laufenden Schritt auf error setzen
+        for step in job["steps"]:
+            if step["status"] == "processing":
+                step["status"] = "error"
+        job["status"] = "error"
+        job["error"] = str(e)
 
 
 # ==================== Endpoints ====================
 
 @po_app.get("/health", response_model=HealthResponse)
 async def health_check():
+    return {"status": "healthy", "timestamp": datetime.utcnow()}
+
+
+@po_app.post("/job", response_model=JobCreated, status_code=202)
+async def create_job(
+    file: UploadFile = File(..., description="PDF-Datei des Modulhandbuchs"),
+    studiengang: str = Form(...),
+    version: str = Form(...),
+    gueltig_ab: date = Form(...),
+    current_user: dict = Depends(get_current_user),
+):
+    """Modulhandbuch hochladen – startet asynchrone Verarbeitung und gibt Job-ID zurück."""
+    file_content = await file.read()
+    job_id = str(uuid.uuid4())
+    job = make_job(job_id)
+    job["_file_content"] = file_content
+    job["_filename"]     = file.filename
+    job["_studiengang"]  = studiengang
+    job["_version"]      = version
+    job["_gueltig_ab"]   = gueltig_ab.isoformat()
+    jobs[job_id] = job
+
+    asyncio.create_task(run_pipeline(job_id))
+    return {"job_id": job_id}
+
+
+@po_app.get("/job/{job_id}/status", response_model=JobStatus)
+async def get_job_status(
+    job_id: str,
+    current_user: dict = Depends(get_current_user),
+):
+    """Status eines Verarbeitungs-Jobs abrufen."""
+    job = jobs.get(job_id)
+    if not job:
+        raise HTTPException(status_code=404, detail="Job nicht gefunden")
     return {
-        "status": "healthy",
-        "timestamp": datetime.utcnow(),
+        "id":         job["id"],
+        "status":     job["status"],
+        "steps":      job["steps"],
+        "po_id":      job["po_id"],
+        "error":      job["error"],
+        "created_at": job["created_at"],
     }
 
 
-@po_app.post("/po", response_model=PODetail, status_code=201)
-async def upload_po(
-    file: UploadFile = File(..., description="PDF-Datei des Modulhandbuchs"),
-    studiengang: str = Form(..., description="Name des Studiengangs"),
-    version: str = Form(..., description="Version (z.B. WS2024)"),
-    gueltig_ab: date = Form(..., description="Gültigkeitsdatum (YYYY-MM-DD)"),
+@po_app.put("/job/{job_id}", response_model=JobCreated, status_code=202)
+async def retry_job(
+    job_id: str,
     current_user: dict = Depends(get_current_user),
 ):
-    """Modulhandbuch hochladen und verarbeiten."""
-    try:
-        file_content = await file.read()
-        result = await pipeline.process_pdf(
-            file_content=file_content,
-            filename=file.filename,
-            studiengang=studiengang,
-            version=version,
-            gueltig_ab=gueltig_ab.isoformat(),
-        )
-        po_detail = await po_repository.get_po_by_id(result["id"])
-        if not po_detail:
-            raise HTTPException(status_code=500, detail="PO konnte nicht abgerufen werden")
-        return po_detail
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
-    except Exception as e:
-        logger.error(f"Fehler beim PO-Upload: {e}")
-        raise HTTPException(status_code=500, detail="Interner Serverfehler")
+    """Fehlgeschlagenen Job neu starten."""
+    job = jobs.get(job_id)
+    if not job:
+        raise HTTPException(status_code=404, detail="Job nicht gefunden")
+    if job["status"] != "error":
+        raise HTTPException(status_code=400, detail="Nur fehlgeschlagene Jobs können neu gestartet werden")
+
+    # Schritte zurücksetzen
+    for step in job["steps"]:
+        step["status"] = "pending"
+    job["status"] = "pending"
+    job["error"] = None
+    job["po_id"] = None
+
+    asyncio.create_task(run_pipeline(job_id))
+    return {"job_id": job_id}
 
 
 @po_app.get("/po", response_model=List[POListItem])
-async def list_pos(
-    current_user: dict = Depends(get_current_user),
-):
+async def list_pos(current_user: dict = Depends(get_current_user)):
     """Alle Prüfungsordnungen auflisten."""
     try:
         return await po_repository.get_all_pos()
@@ -159,10 +337,7 @@ async def list_pos(
 
 
 @po_app.get("/po/{po_id}", response_model=PODetail)
-async def get_po_detail(
-    po_id: str,
-    current_user: dict = Depends(get_current_user),
-):
+async def get_po_detail(po_id: str, current_user: dict = Depends(get_current_user)):
     """PO Details + extrahierte Module abrufen."""
     try:
         po = await po_repository.get_po_by_id(po_id)
@@ -214,10 +389,7 @@ async def update_po_metadata(
 
 
 @po_app.delete("/po/{po_id}", status_code=204)
-async def delete_po(
-    po_id: str,
-    current_user: dict = Depends(get_current_user),
-):
+async def delete_po(po_id: str, current_user: dict = Depends(get_current_user)):
     """PO + S3-Datei + Neo4j-Graph löschen."""
     try:
         po = await po_repository.get_po_by_id(po_id)

@@ -10,6 +10,7 @@ Pipeline-Schritte:
 6. Bei Fehler: Transaktion zurückrollen, S3-Upload rückgängig machen
 """
 
+import asyncio
 import os
 import re
 import logging
@@ -99,7 +100,8 @@ class POPipeline:
             Exception bei Konvertierungsfehler
         """
         try:
-            result = docling_converter.convert(pdf_path)
+            loop = asyncio.get_event_loop()
+            result = await loop.run_in_executor(None, docling_converter.convert, pdf_path)
             docling_doc = result.document
             markdown = docling_doc.export_to_markdown()
             logger.info(f"PDF erfolgreich zu Markdown konvertiert: {pdf_path}")

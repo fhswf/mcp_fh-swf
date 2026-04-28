@@ -298,12 +298,18 @@ class PORepository:
         """
         cypher = """
         MATCH (po:Pruefungsordnung)
-        RETURN po
+        OPTIONAL MATCH (po)-[:ENTHAELT]->(m:Modul)
+        RETURN po, count(m) AS module_count
         ORDER BY po.created_at DESC
         """
         with self.driver.session() as session:
             results = session.run(cypher)
-            return [convert_neo4j_types(dict(record["po"])) for record in results]
+            rows = []
+            for record in results:
+                data = convert_neo4j_types(dict(record["po"]))
+                data["module_count"] = record["module_count"]
+                rows.append(data)
+            return rows
 
     async def get_po_by_id(self, po_id: str) -> Optional[Dict]:
         """

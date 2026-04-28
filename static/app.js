@@ -46,7 +46,8 @@ async function loadPOs() {
       version: p.version,
       date: p.gueltig_ab,
       status: p.status,
-      modules: p.module || []
+      moduleCount: p.module_count || 0,
+      modules: []
     }));
     filteredPOs = [...pos];
     renderList();
@@ -62,7 +63,7 @@ async function loadPOs() {
 // ── METRICS ──────────────────────────────────────────
 function updateMetrics() {
   document.getElementById('m-total').textContent = pos.length;
-  document.getElementById('m-modules').textContent = pos.reduce((a, p) => a + p.modules.length, 0);
+  document.getElementById('m-modules').textContent = pos.reduce((a, p) => a + p.moduleCount, 0);
 }
 
 // ── THEME ─────────────────────────────────────────────
@@ -102,7 +103,7 @@ function renderList() {
     <div class="po-row bg-white dark:bg-gray-800 hairline rounded-xl p-4 flex items-center justify-between cursor-pointer transition-all ${selectedId === p.id ? 'selected' : ''}" onclick="selectPO('${p.id}')">
       <div>
         <h4 class="font-bold text-sm text-slate-900 dark:text-slate-100 mb-1">${p.name}</h4>
-        <p class="text-xs text-slate-500 dark:text-slate-400">${p.version} · ${p.modules.length} Module · ab ${formatDate(p.date)}</p>
+        <p class="text-xs text-slate-500 dark:text-slate-400">${p.version} · ${p.moduleCount} Module · ab ${formatDate(p.date)}</p>
       </div>
       <div class="flex items-center gap-3">
         <span class="px-2.5 py-1 text-[10px] font-bold rounded-full uppercase tracking-wide status-${p.status}">${p.status === 'ready' ? 'Bereit' : p.status === 'veraltet' ? 'Veraltet' : p.status === 'processing' ? 'Wird verarbeitet' : 'Fehler'}</span>
@@ -119,19 +120,21 @@ async function selectPO(id) {
     const poData = await apiCall(`/po/${id}`);
 
     // Update local cache
+    const mappedModules = poData.module.map(m => ({
+      name: m.name,
+      sem: m.semester,
+      ects: m.ects,
+      pf: m.pruefungsform,
+      dozent: m.dozent
+    }));
     const po = {
       id: poData.id,
       name: poData.studiengang,
       version: poData.version,
       date: poData.gueltig_ab,
       status: poData.status,
-      modules: poData.module.map(m => ({
-        name: m.name,
-        sem: m.semester,
-        ects: m.ects,
-        pf: m.pruefungsform,
-        dozent: m.dozent
-      }))
+      moduleCount: mappedModules.length,
+      modules: mappedModules
     };
 
     // Update pos array
@@ -277,7 +280,7 @@ async function handleUpload() {
   }
 
   const btn = document.getElementById('upload-btn');
-  btn.innerHTML = `<span class="material-symbols-outlined text-[18px] spinner">refresh</span>Wird verarbeitet...`;
+  btn.innerHTML = `<span class="material-symbols-outlined text-[18px] spinner">refresh</span>Wird hochgeladen...`;
   btn.disabled = true;
 
   try {
@@ -287,37 +290,10 @@ async function handleUpload() {
     formData.append('version', ver);
     formData.append('gueltig_ab', dt);
 
-    const result = await apiCall('/po', {
-      method: 'POST',
-      body: formData
-    });
+    // Job starten – kommt sofort zurück
+    const { job_id } = await apiCall('/job', { method: 'POST', body: formData });
 
-    // Add to local cache
-    const newPO = {
-      id: result.id,
-      name: result.studiengang,
-      version: result.version,
-      date: result.gueltig_ab,
-      status: result.status,
-      modules: result.module.map(m => ({
-        name: m.name,
-        sem: m.semester,
-        ects: m.ects,
-        pf: m.pruefungsform,
-        dozent: m.dozent
-      }))
-    };
-
-    pos.unshift(newPO);
-    filteredPOs = [...pos];
-    renderList();
-    updateMetrics();
-    renderFilterChips();
-    renderUploadHistory();
-
-    // Reset form
-    btn.innerHTML = `<span class="material-symbols-outlined text-[18px]">cloud_done</span>Hochladen & verarbeiten`;
-    btn.disabled = false;
+    // Formular zurücksetzen
     document.getElementById('f-studiengang').value = '';
     document.getElementById('f-version').value = '';
     document.getElementById('f-date').value = '';
@@ -326,14 +302,88 @@ async function handleUpload() {
     document.getElementById('drop-title').textContent = 'PDF hierher ziehen';
     document.getElementById('drop-sub').textContent = 'oder klicken zum Auswählen';
     document.getElementById('drop-icon').innerHTML = `<span class="material-symbols-outlined text-primary dark:text-blue-400 text-3xl" style="font-variation-settings:'FILL' 1">upload_file</span>`;
+    btn.innerHTML = `<span class="material-symbols-outlined text-[18px]">cloud_done</span>Hochladen & verarbeiten`;
+    btn.disabled = false;
 
-    showToast('Prüfungsordnung erfolgreich hochgeladen', 'check_circle', false);
-    showView('dashboard');
+    // Zur Fortschrittsanzeige wechseln und Status pollen
+    showJobProgress(job_id);
   } catch (error) {
     btn.innerHTML = `<span class="material-symbols-outlined text-[18px]">cloud_done</span>Hochladen & verarbeiten`;
     btn.disabled = false;
     showToast(error.message, 'error', true);
   }
+}
+
+async function showJobProgress(jobId) {
+  const STEP_LABELS = ['PDF validieren', 'PDF konvertieren', 'Module extrahieren', 'S3 Upload', 'Neo4j speichern'];
+
+  // Banner sofort mit allen Schritten als "pending" anzeigen
+  const initialSteps = STEP_LABELS.map(label => `
+    <div class="flex items-center gap-2 text-sm">
+      <span class="material-symbols-outlined text-base text-gray-400">radio_button_unchecked</span>
+      <span>${label}</span>
+    </div>`).join('');
+
+  const banner = document.createElement('div');
+  banner.id = `job-${jobId}`;
+  banner.className = 'p-4 bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-700 rounded-2xl';
+  banner.innerHTML = `<p class="text-sm font-semibold text-blue-700 dark:text-blue-300 mb-3">Verarbeitung läuft...</p>
+    <div id="job-steps-${jobId}" class="space-y-2">${initialSteps}</div>`;
+
+  const bannersContainer = document.getElementById('job-banners');
+  bannersContainer.appendChild(banner);
+
+  const poll = async () => {
+    try {
+      const job = await apiCall(`/job/${jobId}/status`);
+      const stepsEl = document.getElementById(`job-steps-${jobId}`);
+
+      stepsEl.innerHTML = job.steps.map((s, i) => {
+        const icon = s.status === 'done' ? 'check_circle' : s.status === 'error' ? 'cancel' : s.status === 'processing' ? 'refresh' : 'radio_button_unchecked';
+        const color = s.status === 'done' ? 'text-green-500' : s.status === 'error' ? 'text-red-500' : s.status === 'processing' ? 'text-blue-500 spinner' : 'text-gray-400';
+        return `<div class="flex items-center gap-2 text-sm">
+          <span class="material-symbols-outlined text-base ${color}" style="${s.status==='done'?'font-variation-settings:\'FILL\' 1':''}">${icon}</span>
+          <span class="${s.status === 'processing' ? 'font-semibold' : ''}">${STEP_LABELS[i]}</span>
+        </div>`;
+      }).join('');
+
+      if (job.status === 'ready') {
+        banner.className = 'p-4 bg-green-50 dark:bg-green-900/30 border border-green-200 dark:border-green-700 rounded-2xl mb-4';
+        banner.querySelector('p').textContent = 'Erfolgreich verarbeitet!';
+        banner.querySelector('p').className = 'text-sm font-semibold text-green-700 dark:text-green-300 mb-3';
+        showToast('Modulhandbuch erfolgreich verarbeitet', 'check_circle', false);
+        await loadPOs();
+        setTimeout(() => {
+          banner.remove();
+          showView('dashboard');
+        }, 3000);
+      } else if (job.status === 'error') {
+        banner.className = 'p-4 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-700 rounded-2xl mb-4';
+        banner.querySelector('p').textContent = `Fehler: ${job.error || 'Unbekannter Fehler'}`;
+        banner.querySelector('p').className = 'text-sm font-semibold text-red-700 dark:text-red-300 mb-3';
+        // Retry-Button
+        const retryBtn = document.createElement('button');
+        retryBtn.className = 'mt-2 text-xs text-red-600 underline';
+        retryBtn.textContent = 'Erneut versuchen';
+        retryBtn.onclick = async () => {
+          retryBtn.remove();
+          await apiCall(`/job/${jobId}`, { method: 'PUT' });
+          banner.className = 'p-4 bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-700 rounded-2xl mb-4';
+          banner.querySelector('p').textContent = 'Verarbeitung läuft...';
+          banner.querySelector('p').className = 'text-sm font-semibold text-blue-700 dark:text-blue-300 mb-3';
+          setTimeout(poll, 3000);
+        };
+        banner.appendChild(retryBtn);
+        showToast(job.error || 'Verarbeitung fehlgeschlagen', 'error', true);
+      } else {
+        setTimeout(poll, 3000);
+      }
+    } catch (e) {
+      setTimeout(poll, 5000);
+    }
+  };
+
+  setTimeout(poll, 2000);
 }
 
 function renderUploadHistory() {
