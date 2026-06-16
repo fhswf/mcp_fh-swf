@@ -1,6 +1,14 @@
 # CHANGELOG
 
 
+## [0.8.0](https://github.com/fhswf/mcp_fh-swf/compare/v0.7.0...v0.8.0) (2026-06-16)
+
+
+### Features
+
+* implement CI/CD workflows for Docker image builds and Kubernetes deployments ([54dde16](https://github.com/fhswf/mcp_fh-swf/commit/54dde1660e2ee4629dbbc34e7ac8902e544a53b2))
+* implement CI/CD workflows for Docker image builds and Kubernetes deployments ([dfff8b4](https://github.com/fhswf/mcp_fh-swf/commit/dfff8b44bc52a4078bffe7a2005700509b3e9fdf))
+
 ## v0.7.0 (2026-03-24)
 
 ### Features
