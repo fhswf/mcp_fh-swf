@@ -1,0 +1,49 @@
+{
+  "name": "FH-SWF MCP Dev",
+  "dockerComposeFile": "docker-compose.yml",
+  "service": "app",
+  "workspaceFolder": "/workspace",
+  "mounts": [
+    "source=${localEnv:HOME}${localEnv:USERPROFILE}/.ssh,target=/root/.ssh,type=bind,readonly"
+  ],
+  // Let VS Code tunnel ports without Docker publishing them on the remote host.
+  "forwardPorts": [
+    "neo4j:7474",
+    8000
+  ],
+  "portsAttributes": {
+    "7474": {
+      "label": "Neo4j Browser"
+    },
+    "8000": {
+      "label": "MCP App"
+    }
+  },
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-python.python",
+        "ms-python.vscode-pylance",
+        "charliermarsh.ruff",
+        "neo4j-extensions.neo4j-for-vscode",
+        "tamasfe.even-better-toml"
+      ],
+      "settings": {
+        "python.defaultInterpreterPath": "/workspace/.venv/bin/python",
+        "editor.formatOnSave": true,
+        "[python]": {
+          "editor.defaultFormatter": "charliermarsh.ruff"
+        },
+        "git.terminalAuthentication": true
+      }
+    }
+  },
+  // Ensure the venv is synced and env vars are ready after the container starts
+  "postStartCommand": "uv sync && git config --global credential.helper store",
+  "remoteEnv": {
+    "NEO4J_URI": "neo4j://neo4j:7687",
+    "NEO4J_USERNAME": "neo4j",
+    "NEO4J_PASSWORD": "devpassword",
+    "GIT_TERMINAL_PROMPT": "1"
+  }
+}

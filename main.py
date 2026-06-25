@@ -22,11 +22,18 @@ asyncio.run(src.portale_mcp.init())
 import src.appointme_mcp
 asyncio.run(src.appointme_mcp.init())
 
+from po_api import po_app, ui_app
+import src.po_mcp
+_ = src.po_mcp
+
+app.mount("/api/v1", po_app)
+app.mount("/ui", ui_app)
+
 
 port = int(os.getenv("PORT", "8000"))
 
 if __name__ == "__main__":
     try:
-        uvicorn.run(app,host="0.0.0.0", port=8000)
+        uvicorn.run(app, host="0.0.0.0", port=port)
     finally:
         neo_handler.close() 
